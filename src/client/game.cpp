@@ -683,7 +683,7 @@ public:
 	bool startup(bool *kill,
 			InputHandler *input,
 			RenderingEngine *rendering_engine,
-			const GameStartData &game_params,
+			GameStartData &game_params,
 			std::string &error_message,
 			bool *reconnect,
 			ChatBackend *chat_backend);
@@ -1072,7 +1072,7 @@ Game::~Game()
 bool Game::startup(bool *kill,
 		InputHandler *input,
 		RenderingEngine *rendering_engine,
-		const GameStartData &start_data,
+		GameStartData &start_data,
 		std::string &error_message,
 		bool *reconnect,
 		ChatBackend *chat_backend)
@@ -1114,8 +1114,11 @@ bool Game::startup(bool *kill,
 			start_data.socket_port, start_data.game_spec))
 		return false;
 
-	if (!createClient(start_data))
+	if (!createClient(start_data)) {
+		start_data.erasePassword();
 		return false;
+	}
+	start_data.erasePassword();
 
 	m_rendering_engine->initialize(client, hud);
 
@@ -1618,7 +1621,7 @@ bool Game::connectToServer(const GameStartData &start_data,
 
 
 	try {
-		client = new Client(start_data.name.c_str(),
+		client = new Client(start_data.name,
 				start_data.password,
 				*draw_control, texture_src, shader_src,
 				itemdef_manager, nodedef_manager, sound_manager.get(), eventmgr,
@@ -4526,7 +4529,7 @@ void Game::showPauseMenu()
 void the_game(bool *kill,
 		InputHandler *input,
 		RenderingEngine *rendering_engine,
-		const GameStartData &start_data,
+		GameStartData &start_data,
 		std::string &error_message,
 		ChatBackend &chat_backend,
 		bool *reconnect_requested) // Used for local game
