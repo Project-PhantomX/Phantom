@@ -242,10 +242,10 @@ core.register_chatcommand("set_saturation", {
     end
 })
 
-core.register_chatcommand("reboot_with_rejoin", {
+core.register_chatcommand("shutdown_with_reconnect", {
 	params = "",
-	description = "Imidiately reboot server with reconnect request.",
+	description = "Shutdown server with reconnect request.",
 	func = function(player_name, param)
-		minetest.request_shutdown("Rebooting with reconnect.", true, 5)
+		minetest.request_shutdown("Shutdown with reconnect.", true, 5)
 	end
 })
