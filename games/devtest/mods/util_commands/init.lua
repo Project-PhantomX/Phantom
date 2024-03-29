@@ -241,3 +241,11 @@ core.register_chatcommand("set_saturation", {
         minetest.get_player_by_name(player_name):set_lighting({saturation = saturation })
     end
 })
+
+core.register_chatcommand("reboot_with_rejoin", {
+	params = "",
+	description = "Imidiately reboot server with reconnect request.",
+	func = function(player_name, param)
+		minetest.request_shutdown("Rebooting with reconnect.", true, 5)
+	end
+})
