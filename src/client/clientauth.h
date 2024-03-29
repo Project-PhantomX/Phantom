@@ -42,9 +42,9 @@ public:
 	bool getIsEmpty() const { return m_is_empty; }
 	const std::string &getSrpVerifier() const { return m_srp_verifier; }
 	const std::string &getSrpSalt() const { return m_srp_salt; }
-	void * getLegacyAuthData() const { return m_legacy_auth_data; }
-	void * getSrpAuthData() const { return m_srp_auth_data; }
-	void * getAuthData(AuthMechanism chosen_auth_mech) const;
+	SRPUser * getLegacyAuthData() const { return m_legacy_auth_data; }
+	SRPUser * getSrpAuthData() const { return m_srp_auth_data; }
+	SRPUser * getAuthData(AuthMechanism chosen_auth_mech) const;
 	
 	void clear();
 private:

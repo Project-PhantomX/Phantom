@@ -317,6 +317,9 @@ bool open_url(const std::string &url);
  */
 bool open_directory(const std::string &path);
 
+/// Override every character before clearing
+void clear_string(std::string &text);
+
 } // namespace porting
 
 #ifdef __ANDROID__

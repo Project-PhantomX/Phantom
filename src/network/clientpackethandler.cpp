@@ -1569,7 +1569,7 @@ void Client::handleCommand_SrpBytesSandB(NetworkPacket* pkt)
 
 	char *bytes_M = 0;
 	size_t len_M = 0;
-	SRPUser *usr = static_cast<SRPUser *>(m_auth.getAuthData(m_chosen_auth_mech));
+	SRPUser *usr = m_auth.getAuthData(m_chosen_auth_mech);
 	std::string s;
 	std::string B;
 	*pkt >> s >> B;

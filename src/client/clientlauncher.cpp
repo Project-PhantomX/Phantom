@@ -450,7 +450,7 @@ bool ClientLauncher::launch_game(std::string &error_message,
 		server_description = menudata.serverdescription;
 
 		/* make sure that password will not stay somewhere in memory */
-		clear_string(menudata.password);
+		porting::clear_string(menudata.password);
 
 		start_data.local_server = !menudata.simple_singleplayer_mode &&
 			start_data.address.empty();

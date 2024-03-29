@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "irrlichttypes.h"
 #include "content/subgames.h"
-#include "util/auth.h"
+#include "porting.h"
 
 // Information provided from "main"
 struct GameParams
@@ -59,6 +59,6 @@ struct GameStartData : GameParams
 
 	void erasePassword() {
 		/* make sure that password will not stay somewhere in memory */
-    clear_string(password);
+		porting::clear_string(password);
 	}
 };

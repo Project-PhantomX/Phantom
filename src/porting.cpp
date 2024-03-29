@@ -23,6 +23,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	See comments in porting.h
 */
 
+// enable include of memset_s function
+#define __STDC_WANT_LIB_EXT1__ 1
+
 #include "porting.h"
 
 #if defined(__FreeBSD__)  || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
@@ -887,5 +890,23 @@ inline double get_perf_freq()
 double perf_freq = get_perf_freq();
 
 #endif
+
+/// Override every character before clearing
+void clear_string(std::string &text)
+{
+	#ifdef __STDC_LIB_EXT1__
+	memset_s((void *)text.data(), text.size(), '0', text.size());
+	#elif _WIN32
+	SecureZeroMemory((void *)text.data(), text.size());
+	#else
+	volatile char *ch = (char *)text.data();
+	size_t n = text.size();
+	for (;n>0;n--) {
+		*ch = 0;
+		ch++;
+	}
+	#endif
+	text.clear();
+}
 
 } //namespace porting

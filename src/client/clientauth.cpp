@@ -22,9 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/srp.h"
 
 ClientAuth::ClientAuth() :
-		m_is_empty(true),
-		m_srp_verifier(""),
-		m_srp_salt("")
+		m_is_empty(true)
 {
 }
 
@@ -79,7 +77,7 @@ void ClientAuth::applyPassword(const std::string &player_name, const std::string
 			translated.length(), NULL, NULL);
 }
 
-void * ClientAuth::getAuthData(AuthMechanism chosen_auth_mech) const
+SRPUser * ClientAuth::getAuthData(AuthMechanism chosen_auth_mech) const
 {
 	switch (chosen_auth_mech) {
 		case AUTH_MECHANISM_LEGACY_PASSWORD:
