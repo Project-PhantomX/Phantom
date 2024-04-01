@@ -125,7 +125,8 @@ public:
 
 	Client(
 			const std::string &playername,
-			const std::string &password,
+			//const std::string &password,
+			ClientAuth *auth,
 			MapDrawControl &control,
 			IWritableTextureSource *tsrc,
 			IWritableShaderSource *shsrc,
@@ -534,7 +535,7 @@ private:
 
 	// Auth data
 	std::string m_playername;
-	ClientAuth m_auth;
+	ClientAuth *m_auth;
 	// If set, this will be sent (and cleared) upon a TOCLIENT_ACCEPT_SUDO_MODE
 	ClientAuth m_new_auth;
 	// Usable by auth mechanisms.

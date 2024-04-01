@@ -98,7 +98,8 @@ void PacketCounter::print(std::ostream &o) const
 
 Client::Client(
 		const std::string &playername,
-		const std::string &password,
+		//const std::string &password,
+		ClientAuth *auth,
 		MapDrawControl &control,
 		IWritableTextureSource *tsrc,
 		IWritableShaderSource *shsrc,
@@ -126,7 +127,7 @@ Client::Client(
 	m_allow_login_or_register(allow_login_or_register),
 	m_server_ser_ver(SER_FMT_VER_INVALID),
 	m_last_chat_message_sent(time(NULL)),
-	m_auth(playername, password),
+	m_auth(auth),
 	m_chosen_auth_mech(AUTH_MECHANISM_NONE),
 	m_media_downloader(new ClientMediaDownloader()),
 	m_state(LC_Created),
@@ -1113,7 +1114,7 @@ void Client::interact(InteractAction action, const PointedThing& pointed)
 
 void Client::deleteAuthData()
 {
-	m_auth.clear();
+	m_auth->clearSessionData();
 	m_chosen_auth_mech = AUTH_MECHANISM_NONE;
 }
 
@@ -1155,11 +1156,11 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 	switch (chosen_auth_mechanism) {
 		case AUTH_MECHANISM_FIRST_SRP: {
 			// send srp verifier to server
-			const std::string &verifier = m_auth.getSrpVerifier();
-			const std::string &salt = m_auth.getSrpSalt();
+			const std::string &verifier = m_auth->getSrpVerifier();
+			const std::string &salt = m_auth->getSrpSalt();
 
 			NetworkPacket resp_pkt(TOSERVER_FIRST_SRP, 0);
-			resp_pkt << salt << verifier << (u8)((m_auth.getIsEmpty()) ? 1 : 0);
+			resp_pkt << salt << verifier << (u8)((m_auth->getIsEmpty()) ? 1 : 0);
 
 			Send(&resp_pkt);
 			break;
@@ -1167,21 +1168,21 @@ void Client::startAuth(AuthMechanism chosen_auth_mechanism)
 		case AUTH_MECHANISM_SRP:
 		case AUTH_MECHANISM_LEGACY_PASSWORD: {
 			u8 based_on;
-			void * auth_data;
+			SRPUser *auth_data;
 
 			if (chosen_auth_mechanism == AUTH_MECHANISM_LEGACY_PASSWORD) {
 				based_on = 0;
-				auth_data = m_auth.getLegacyAuthData();
+				auth_data = m_auth->getLegacyAuthData();
 			}
 			else {
 				based_on = 1;
-				auth_data = m_auth.getSrpAuthData();
+				auth_data = m_auth->getSrpAuthData();
 			}
 
 			char *bytes_A = 0;
 			size_t len_A = 0;
 			SRP_Result res = srp_user_start_authentication(
-				static_cast<struct SRPUser *>(auth_data), NULL, NULL, 0,
+				auth_data, NULL, NULL, 0,
 				reinterpret_cast<unsigned char **>(&bytes_A), &len_A);
 			FATAL_ERROR_IF(res != SRP_OK, "Creating local SRP user failed.");
 
@@ -1343,7 +1344,7 @@ void Client::sendChangePassword(const std::string &oldpassword,
 
 	// get into sudo mode and then send new password to server
 	std::string playername = m_env.getLocalPlayer()->getName();
-	m_auth.applyPassword(playername, oldpassword);
+	m_auth->applyPassword(playername, oldpassword);
 	m_new_auth.applyPassword(playername, newpassword);
 	startAuth(choseAuthMech(m_sudo_auth_methods));
 }

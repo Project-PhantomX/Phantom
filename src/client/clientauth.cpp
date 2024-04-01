@@ -102,3 +102,17 @@ void ClientAuth::clear()
 	m_srp_verifier.clear();
 	m_srp_salt.clear();
 }
+
+void ClientAuth::clearSessionData()
+{
+	if (m_legacy_auth_data != nullptr) {
+		srp_user_clear_sessiondata(m_legacy_auth_data);
+	}
+	if (m_srp_auth_data != nullptr) {
+		srp_user_clear_sessiondata(m_srp_auth_data);
+	}
+	// This is need only for first login to server.
+	// So, there is no need to keep this for reconnect purposes.
+	m_srp_verifier.clear();
+	m_srp_salt.clear();
+}

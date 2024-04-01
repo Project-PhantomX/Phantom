@@ -317,8 +317,8 @@ bool open_url(const std::string &url);
  */
 bool open_directory(const std::string &path);
 
-/// Override every character before clearing
-void clear_string(std::string &text);
+/// Clear string by overwriting every character (used for security)
+void secure_clear_string(std::string &text);
 
 } // namespace porting
 

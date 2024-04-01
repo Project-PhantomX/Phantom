@@ -47,6 +47,7 @@ public:
 	SRPUser * getAuthData(AuthMechanism chosen_auth_mech) const;
 	
 	void clear();
+	void clearSessionData();
 private:
 	bool m_is_empty;
 
