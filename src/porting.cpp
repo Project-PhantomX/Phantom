@@ -895,9 +895,9 @@ double perf_freq = get_perf_freq();
 void secure_clear_memory(volatile void *ptr, size_t size)
 {
 #ifdef __STDC_LIB_EXT1__
-	memset_s(prt, size, '0', size);
+	memset_s(ptr, size, '0', size);
 #elif _WIN32
-	SecureZeroMemory(prt, size);
+	SecureZeroMemory((PVOID)ptr, size);
 #else
 	volatile char *ch = (char *)ptr;
 	for (;size>0;size--) {
