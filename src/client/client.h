@@ -249,8 +249,8 @@ public:
 	void sendInventoryAction(InventoryAction *a);
 	void sendChatMessage(const std::wstring &message);
 	void clearOutChatQueue();
-	void sendChangePassword(const std::string &oldpassword,
-		const std::string &newpassword);
+	void sendChangePassword(std::string &oldpassword,
+		std::string &newpassword);
 	void sendDamage(u16 damage);
 	void sendRespawn();
 	void sendReady();

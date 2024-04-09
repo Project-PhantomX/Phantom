@@ -891,21 +891,32 @@ double perf_freq = get_perf_freq();
 
 #endif
 
-/// Override every character before clearing
-void secure_clear_string(std::string &text)
+/// Override every byte before clearing
+void secure_clear_memory(volatile void *ptr, size_t size)
 {
 #ifdef __STDC_LIB_EXT1__
-	memset_s((void *)text.data(), text.size(), '0', text.size());
+	memset_s(prt, size, '0', size);
 #elif _WIN32
-	SecureZeroMemory((void *)text.data(), text.size());
+	SecureZeroMemory(prt, size);
 #else
-	volatile char *ch = (char *)text.data();
-	size_t n = text.size();
-	for (;n>0;n--) {
+	volatile char *ch = (char *)ptr;
+	for (;size>0;size--) {
 		*ch = 0;
 		ch++;
 	}
 #endif
+}
+
+/// Override every character before clearing
+void secure_clear_string(std::string &text)
+{
+	secure_clear_memory((void *)text.data(), text.size());
+	text.clear();
+}
+
+void secure_clear_string(std::wstring &text)
+{
+	secure_clear_memory((void *)text.data(), text.size()*sizeof(wchar_t));
 	text.clear();
 }
 

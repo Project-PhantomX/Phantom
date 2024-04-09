@@ -1335,17 +1335,25 @@ void Client::clearOutChatQueue()
 	m_out_chat_queue = std::queue<std::wstring>();
 }
 
-void Client::sendChangePassword(const std::string &oldpassword,
-	const std::string &newpassword)
+void Client::sendChangePassword(std::string &oldpassword,
+	std::string &newpassword)
 {
 	LocalPlayer *player = m_env.getLocalPlayer();
-	if (player == NULL)
+	if (player == NULL) {
+		porting::secure_clear_string(oldpassword);
+		porting::secure_clear_string(newpassword);
 		return;
+  }
 
 	// get into sudo mode and then send new password to server
 	std::string playername = m_env.getLocalPlayer()->getName();
 	m_auth->applyPassword(playername, oldpassword);
 	m_new_auth.applyPassword(playername, newpassword);
+
+	// we do not need to keep passwords in memory
+	porting::secure_clear_string(oldpassword);
+	porting::secure_clear_string(newpassword);
+
 	startAuth(choseAuthMech(m_sudo_auth_methods));
 }
 
