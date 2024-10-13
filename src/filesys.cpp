@@ -119,7 +119,7 @@ std::vector<DirListNode> GetDirListing(const std::string &pathstring)
 					<< " Error is " << dwError << std::endl;
 			listing.clear();
 			return listing;
- 		}
+		}
 	}
 	return listing;
 }
@@ -730,7 +730,7 @@ bool PathStartsWith(const std::string &path, const std::string &prefix)
 			if(prefixpos == prefixsize)
 				return true;
 			// Return false if path has ended (at delimiter/EOS)
-            // while prefix did not.
+			// while prefix did not.
 			if(pathpos == pathsize)
 				return false;
 		}
