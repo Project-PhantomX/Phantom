@@ -14,5 +14,7 @@ public:
 	virtual bool getCollisionBox(aabb3f *toset) const { return false; }
 	virtual bool getSelectionBox(aabb3f *toset) const { return false; }
 	virtual bool collideWithObjects() const { return false; }
-	virtual std::string getGuid() {return "";}
+	virtual const GUId& getGuid() {return m_guid;}
+private:
+	GUId m_guid;
 };

@@ -109,9 +109,7 @@ int ObjectRef::l_get_guid(lua_State *L)
 	if (sao == nullptr)
 		return 0;
 
-	const std::string &guid = sao->getGuid();
-
-	lua_pushstring(L, guid.c_str());
+	lua_pushstring(L, sao->getGuid().c_str());
 	return 1;
 }
 

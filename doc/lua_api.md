@@ -8326,8 +8326,8 @@ child will follow movement and rotation of that bone.
       }
       ```
 * `get_guid()`: returns a global unique identifier (a string)
-    * For players a global unique identiticator is a player name.
-    * For non-player objects, it is unique generated string.
+    * For players this is a player name.
+    * For Lua entities, it is a unique generated string.
 
 #### Lua entity only (no-op for other objects)
 

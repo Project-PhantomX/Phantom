@@ -45,7 +45,7 @@ public:
 	void setHP(s32 hp, const PlayerHPChangeReason &reason);
 	u16 getHP() const;
 	bool setGuid(std::string &guid);
-	GUId getGuid() override;
+	const GUId& getGuid() override;
 
 	/* LuaEntitySAO-specific */
 	void setVelocity(v3f velocity);

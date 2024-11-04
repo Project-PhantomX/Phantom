@@ -434,10 +434,10 @@ bool LuaEntitySAO::setGuid(std::string &guid)
 	}
 	return false;
 }
-GUId LuaEntitySAO::getGuid()
+const GUId& LuaEntitySAO::getGuid()
 {
 	if (m_guid.empty()) {
-		m_guid = m_env->getGUIdGenerator().next(std::string("@"));
+		m_guid = m_env->getGUIdGenerator().next();
 	}
 	return m_guid;
 }

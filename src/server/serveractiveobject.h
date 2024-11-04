@@ -143,7 +143,7 @@ public:
 	{ return 0; }
 
 	// Returns always the same unique string for the same object.
-	virtual GUId getGuid() = 0;
+	virtual const GUId& getGuid() = 0;
 
 	virtual void setArmorGroups(const ItemGroupList &armor_groups)
 	{}
@@ -220,11 +220,6 @@ public:
 		about handling it.
 	*/
 	bool m_static_exists = false;
-	/*
-		Set this to true when the staticdata needs to be saved even though it
-		looks like it did not change.
-	*/
-	bool m_force_write_staticdata = false;
 	/*
 		The block from which the object was loaded from, and in which
 		a copy of the static data resides.
