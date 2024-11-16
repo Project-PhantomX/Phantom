@@ -42,8 +42,9 @@ core.features = {
 	override_item_remove_fields = true,
 	hotbar_hud_element = true,
 	bulk_lbms = true,
-	abm_without_neighbors = true,
-	biome_weights = true,
+  abm_without_neighbors = true,
+  biome_weights = true,
+	preserve_liquid_param2 = true,
 }
 
 function core.has_feature(arg)
