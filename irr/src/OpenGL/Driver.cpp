@@ -171,8 +171,8 @@ COpenGL3DriverBase::COpenGL3DriverBase(const SIrrlichtCreationParameters &params
 	ContextManager->activateContext(ExposedData, false);
 	GL.LoadAllProcedures(ContextManager);
 	if (EnableErrorTest) {
-		GL.Enable(GL_DEBUG_OUTPUT);
-		GL.DebugMessageCallback(debugCb, this);
+		//GL.Enable(GL_DEBUG_OUTPUT);
+		//GL.DebugMessageCallback(debugCb, this);
 	}
 	initQuadsIndices();
 }
