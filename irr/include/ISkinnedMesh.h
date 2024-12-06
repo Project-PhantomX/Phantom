@@ -4,10 +4,13 @@
 
 #pragma once
 
+#include "aabbox3d.h"
 #include "irrArray.h"
 #include "IAnimatedMesh.h"
 #include "SSkinMeshBuffer.h"
 #include "quaternion.h"
+#include "vector3d.h"
+#include "Transform.h"
 
 #include <optional>
 #include <string>
@@ -27,6 +30,113 @@ enum E_INTERPOLATION_MODE
 
 	//! count of all available interpolation modes
 	EIM_COUNT
+};
+
+template <class T>
+struct Channel {
+	struct Frame {
+		f32 time;
+		T value;
+	};
+	std::vector<Frame> frames;
+
+	inline bool empty() const {
+		return frames.empty();
+	}
+
+	inline f32 getEndFrame() const {
+		return frames.empty() ? 0 : frames.back().time;
+	}
+
+	inline void add(f32 time, const T &value) {
+		frames.push_back({time, value});
+	}
+
+	inline void append(const Channel<T> &other) {
+		frames.insert(frames.end(), other.frames.begin(), other.frames.end());
+	}
+
+	inline void cleanup() {
+		if (frames.empty())
+			return;
+
+		std::vector<Frame> ordered;
+		ordered.push_back(frames.front());
+		// Drop out-of-order frames
+		for (auto it = frames.begin() + 1; it != frames.end(); ++it) {
+			if (it->time > ordered.back().time) {
+				ordered.push_back(*it);
+			}
+		}
+		frames.clear();
+		// Drop redundant middle keys
+		frames.push_back(ordered.front());
+		for (u32 i = 1; i < ordered.size() - 1; ++i) {
+			if (ordered[i - 1].value != ordered[i].value
+					|| ordered[i + 1].value != ordered[i].value) {
+				frames.push_back(ordered[i]);
+			}
+		}
+		if (ordered.size() > 1)
+			frames.push_back(ordered.back());
+		frames.shrink_to_fit();
+	}
+
+	inline std::optional<T> get(f32 time, bool interpolate) const {
+		if (frames.empty())
+			return std::nullopt;
+
+		const auto next = std::lower_bound(frames.begin(), frames.end(), time, [](const Frame& frame, f32 time) {
+			return frame.time < time;
+		});
+		if (next == frames.begin())
+			return next->value;
+		if (next == frames.end())
+			return frames.back().value;
+
+		const auto prev = next - 1;
+		if (prev->time == time || !interpolate)
+			return prev->value;
+
+		return prev->value.getInterpolated(next->value, (time - prev->time) / (next->time - prev->time));
+	}
+};
+
+struct Keys {
+	Channel<core::vector3df> position;
+	Channel<core::quaternion> rotation;
+	Channel<core::vector3df> scale;
+	inline bool empty() const {
+		return position.empty() || rotation.empty() || scale.empty();
+	}
+	inline void append(const Keys &other) {
+		position.append(other.position);
+		rotation.append(other.rotation);
+		scale.append(other.scale);
+	}
+	inline f32 getEndFrame() const {
+		return std::max({
+			position.getEndFrame(),
+			rotation.getEndFrame(),
+			scale.getEndFrame()
+		});
+	}
+
+	inline void updateTransform(f32 frame, bool interpolate,
+			core::Transform &transform) const
+	{
+		if (auto pos = position.get(frame, interpolate))
+			transform.translation = *pos;
+		if (auto rot = rotation.get(frame, interpolate))
+			transform.rotation = *rot;
+		if (auto scl = scale.get(frame, interpolate))
+			transform.scale = *scl;
+	}
+	inline void cleanup() {
+		position.cleanup();
+		rotation.cleanup();
+		scale.cleanup();
+	}
 };
 
 //! Interface for using some special functions of Skinned meshes
@@ -66,7 +176,7 @@ public:
 	virtual void setInterpolationMode(E_INTERPOLATION_MODE mode) = 0;
 
 	//! Animates this mesh's joints based on frame input
-	virtual void animateMesh(f32 frame, f32 blend) = 0;
+	virtual void animateMesh(f32 frame) = 0;
 
 	//! Preforms a software skin on this mesh based of joint positions
 	virtual void skinMesh() = 0;
@@ -105,36 +215,9 @@ public:
 		core::vector3df StaticNormal;
 	};
 
-	//! Animation keyframe which describes a new position
-	struct SPositionKey
-	{
-		f32 frame;
-		core::vector3df position;
-	};
-
-	//! Animation keyframe which describes a new scale
-	struct SScaleKey
-	{
-		f32 frame;
-		core::vector3df scale;
-	};
-
-	//! Animation keyframe which describes a new rotation
-	struct SRotationKey
-	{
-		f32 frame;
-		core::quaternion rotation;
-	};
-
 	//! Joints
 	struct SJoint
 	{
-		SJoint() :
-				UseAnimationFrom(0), GlobalSkinningSpace(false),
-				positionHint(-1), scaleHint(-1), rotationHint(-1)
-		{
-		}
-
 		//! The name of this joint
 		std::optional<std::string> Name;
 
@@ -145,29 +228,22 @@ public:
 		core::array<SJoint *> Children;
 
 		//! List of attached meshes
-		core::array<u32> AttachedMeshes;
+		std::vector<u32> AttachedMeshes;
 
-		//! Animation keys causing translation change
-		core::array<SPositionKey> PositionKeys;
-
-		//! Animation keys causing scale change
-		core::array<SScaleKey> ScaleKeys;
-
-		//! Animation keys causing rotation change
-		core::array<SRotationKey> RotationKeys;
+		Keys keys;
 
 		//! Skin weights
 		core::array<SWeight> Weights;
+		//! Bounding box of all affected vertices, in local space
+		core::aabbox3df LocalBoundingBox = core::vector3df();
 
 		//! Unnecessary for loaders, will be overwritten on finalize
 		core::matrix4 GlobalMatrix; // loaders may still choose to set this (temporarily) to calculate absolute vertex data.
 		core::matrix4 GlobalAnimatedMatrix;
 		core::matrix4 LocalAnimatedMatrix;
 
-		//! These should be set by loaders.
-		core::vector3df Animatedposition;
-		core::vector3df Animatedscale;
-		core::quaternion Animatedrotation;
+		//! This should be set by loaders.
+		core::Transform AnimatedTransform;
 
 		// The .x and .gltf formats pre-calculate this
 		std::optional<core::matrix4> GlobalInversedMatrix;
@@ -175,12 +251,8 @@ public:
 		//! Internal members used by CSkinnedMesh
 		friend class CSkinnedMesh;
 
-		SJoint *UseAnimationFrom;
-		bool GlobalSkinningSpace;
-
-		s32 positionHint;
-		s32 scaleHint;
-		s32 rotationHint;
+		SJoint *UseAnimationFrom = nullptr;
+		bool GlobalSkinningSpace = false;
 	};
 
 	// Interface for the mesh loaders (finalize should lock these functions, and they should have some prefix like loader_
@@ -211,12 +283,12 @@ public:
 	//! Adds a new weight to the mesh, access it as last one
 	virtual SWeight *addWeight(SJoint *joint) = 0;
 
-	//! Adds a new position key to the mesh, access it as last one
-	virtual SPositionKey *addPositionKey(SJoint *joint) = 0;
-	//! Adds a new scale key to the mesh, access it as last one
-	virtual SScaleKey *addScaleKey(SJoint *joint) = 0;
-	//! Adds a new rotation key to the mesh, access it as last one
-	virtual SRotationKey *addRotationKey(SJoint *joint) = 0;
+	//! Adds a new position key to the mesh
+	virtual void addPositionKey(SJoint *joint, f32 frame, core::vector3df pos) = 0;
+	//! Adds a new scale key to the mesh
+	virtual void addScaleKey(SJoint *joint, f32 frame, core::vector3df scale) = 0;
+	//! Adds a new rotation key to the mesh
+	virtual void addRotationKey(SJoint *joint, f32 frame, core::quaternion rotation) = 0;
 
 	//! Check if the mesh is non-animated
 	virtual bool isStatic() = 0;
