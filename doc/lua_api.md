@@ -9175,7 +9175,7 @@ Player properties need to be saved manually.
     -- Clients older than 5.9.0 interpret `pointable = "blocking"` as `pointable = true`.
     -- Can be overridden by the `pointabilities` of the held item.
 
-    visual = "cube" / "sprite" / "upright_sprite" / "mesh" / "wielditem" / "item",
+    visual = "",
     -- "cube" is a node-sized cube.
     -- "sprite" is a flat texture always facing the player.
     -- "upright_sprite" is a vertical flat texture.
@@ -9197,6 +9197,8 @@ Player properties need to be saved manually.
     --   Wielditems are scaled a bit. If you want a wielditem to appear
     --   to be as large as a node, use `0.667` in `visual_size`
     -- "item" is similar to "wielditem" but ignores the 'wield_image' parameter.
+    -- "node" looks exactly like a node in-world.
+    --   For this use 'textures = {nodename}'.
 
     visual_size = {x = 1, y = 1, z = 1},
     -- Multipliers for the visual size. If `z` is not specified, `x` will be used

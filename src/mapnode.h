@@ -145,7 +145,7 @@ struct alignas(u32) MapNode
 
 	MapNode() = default;
 
-	MapNode(content_t content, u8 a_param1=0, u8 a_param2=0) noexcept
+	constexpr MapNode(content_t content, u8 a_param1=0, u8 a_param2=0) noexcept
 		: param0(content),
 		  param1(a_param1),
 		  param2(a_param2)

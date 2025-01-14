@@ -12,6 +12,8 @@
 #include "client/sound.h"
 #include "client/texturesource.h"
 #include "client/mapblock_mesh.h"
+#include "client/content_mapblock.h"
+#include "client/meshgen/collector.h"
 #include "util/basic_macros.h"
 #include "util/numeric.h"
 #include "util/serialize.h"
@@ -175,6 +177,52 @@ static void setColorParam(scene::ISceneNode *node, video::SColor color)
 {
 	for (u32 i = 0; i < node->getMaterialCount(); ++i)
 		node->getMaterial(i).ColorParam = color;
+}
+
+static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n)
+{
+	n.setParam1(0xff);
+
+	MeshCollector collector(v3f(0), v3f());
+	{
+		MeshMakeData mmd(ndef, 1, MeshGrid{1});
+		mmd.fillSingleNode(n);
+		MapblockMeshGenerator(&mmd, &collector).generate();
+	}
+
+	auto mesh = make_irr<scene::SMesh>();
+	for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
+		for (PreMeshBuffer &p : collector.prebuffers[layer]) {
+			if (p.layer.has_color)
+				p.applyTileColor(); // FIXME might be black
+			else
+				for (auto &v : p.vertices)
+					v.Color.set(255, 255, 255, 255);
+
+			// TOOD support this
+			if (p.layer.material_flags & MATERIAL_FLAG_ANIMATION) {
+				const FrameSpec &frame = (*p.layer.frames)[0];
+				p.layer.texture = frame.texture;
+			}
+
+			auto buf = make_irr<scene::SMeshBuffer>();
+			buf->append(&p.vertices[0], p.vertices.size(),
+					&p.indices[0], p.indices.size());
+
+			// Set up material
+			buf->Material.setTexture(0, p.layer.texture);
+			if (layer == 1) {
+				buf->Material.PolygonOffsetSlopeScale = -1;
+				buf->Material.PolygonOffsetDepthBias = -1;
+			}
+			// TODO alphamode trampled on later
+			p.layer.applyMaterialOptions(buf->Material);
+
+			mesh->addMeshBuffer(buf.get());
+		}
+	}
+	mesh->recalculateBoundingBox();
+	return mesh.release();
 }
 
 /*
@@ -616,10 +664,8 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		m_material_type = shader_source->getShaderInfo(shader_id).material;
 	}
 
-	auto grabMatrixNode = [this] {
-		m_matrixnode = m_smgr->addDummyTransformationSceneNode();
-		m_matrixnode->grab();
-	};
+	m_matrixnode = m_smgr->addDummyTransformationSceneNode();
+	m_matrixnode->grab();
 
 	auto setMaterial = [this] (video::SMaterial &mat) {
 		mat.MaterialType = m_material_type;
@@ -635,7 +681,6 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 	};
 
 	if (m_prop.visual == "sprite") {
-		grabMatrixNode();
 		m_spritenode = m_smgr->addBillboardSceneNode(
 				m_matrixnode, v2f(1, 1), v3f(0,0,0), -1);
 		m_spritenode->grab();
@@ -655,7 +700,6 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 					txs, tys, 0, 0);
 		}
 	} else if (m_prop.visual == "upright_sprite") {
-		grabMatrixNode();
 		auto mesh = make_irr<scene::SMesh>();
 		f32 dx = BS * m_prop.visual_size.X / 2;
 		f32 dy = BS * m_prop.visual_size.Y / 2;
@@ -697,7 +741,6 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		m_meshnode = m_smgr->addMeshSceneNode(mesh.get(), m_matrixnode);
 		m_meshnode->grab();
 	} else if (m_prop.visual == "cube") {
-		grabMatrixNode();
 		scene::IMesh *mesh = createCubeMesh(v3f(BS,BS,BS));
 		m_meshnode = m_smgr->addMeshSceneNode(mesh, m_matrixnode);
 		m_meshnode->grab();
@@ -711,7 +754,6 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 			mat.BackfaceCulling = m_prop.backface_culling;
 		});
 	} else if (m_prop.visual == "mesh") {
-		grabMatrixNode();
 		scene::IAnimatedMesh *mesh = m_client->getMesh(m_prop.mesh, true);
 		if (mesh) {
 			if (!checkMeshNormals(mesh)) {
@@ -738,7 +780,6 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		} else
 			errorstream<<"GenericCAO::addToScene(): Could not load mesh "<<m_prop.mesh<<std::endl;
 	} else if (m_prop.visual == "wielditem" || m_prop.visual == "item") {
-		grabMatrixNode();
 		ItemStack item;
 		if (m_prop.wield_item.empty()) {
 			// Old format, only textures are specified.
@@ -758,6 +799,22 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 			(m_prop.visual == "wielditem"));
 
 		m_wield_meshnode->setScale(m_prop.visual_size / 2.0f);
+	} else if (m_prop.visual == "node") {
+		MapNode n;
+		n.setContent(m_client->ndef()->getId(m_prop.textures.at(0)));
+		auto *mesh = generateNodeMesh(m_client->ndef(), n);
+
+		m_meshnode = m_smgr->addMeshSceneNode(mesh, m_matrixnode);
+		m_meshnode->grab();
+		mesh->drop();
+
+		m_meshnode->setScale(m_prop.visual_size);
+
+		setSceneNodeMaterials(m_meshnode);
+
+		m_meshnode->forEachMaterial([this] (auto &mat) {
+			mat.BackfaceCulling = m_prop.backface_culling;
+		});
 	} else {
 		infostream<<"GenericCAO::addToScene(): \""<<m_prop.visual
 				<<"\" not supported"<<std::endl;
@@ -786,8 +843,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		updateTextures(m_current_texture_modifier);
 
 	if (scene::ISceneNode *node = getSceneNode()) {
-		if (m_matrixnode)
-			node->setParent(m_matrixnode);
+		node->setParent(m_matrixnode);
 
 		if (auto shadow = RenderingEngine::get_shadow_renderer())
 			shadow->addNodeToShadowList(node);
@@ -962,6 +1018,7 @@ void GenericCAO::updateNodePos()
 	scene::ISceneNode *node = getSceneNode();
 
 	if (node) {
+		assert(m_matrixnode);
 		v3s16 camera_offset = m_env->getCameraOffset();
 		v3f pos = pos_translator.val_current -
 				intToFloat(camera_offset, BS);
