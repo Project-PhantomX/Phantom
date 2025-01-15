@@ -187,7 +187,7 @@ static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n,
 	MeshCollector collector(v3f(0), v3f());
 	{
 		MeshMakeData mmd(ndef, 1, MeshGrid{1});
-		mmd.fillSingleNode(n);
+		mmd.fillSingleNode(n, MapNode(CONTENT_AIR, 0xff));
 		MapblockMeshGenerator(&mmd, &collector).generate();
 	}
 
@@ -195,11 +195,7 @@ static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n,
 	animation.clear();
 	for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
 		for (PreMeshBuffer &p : collector.prebuffers[layer]) {
-			if (p.layer.has_color)
-				p.applyTileColor(); // FIXME might be black
-			else
-				for (auto &v : p.vertices)
-					v.Color.set(255, 255, 255, 255);
+			p.applyTileColor();
 
 			// TOOD support this
 			if (p.layer.material_flags & MATERIAL_FLAG_ANIMATION) {
@@ -807,6 +803,8 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 	} else if (m_prop.visual == "node") {
 		MapNode n;
 		n.setContent(m_client->ndef()->getId(m_prop.textures.at(0)));
+		if (m_prop.textures.size() > 1)
+			n.setParam2(stoi(m_prop.textures[1], 0, 255));
 		auto *mesh = generateNodeMesh(m_client->ndef(), n, m_meshnode_animation);
 
 		m_meshnode = m_smgr->addMeshSceneNode(mesh, m_matrixnode);
@@ -815,6 +813,8 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		mesh->drop();
 
 		m_meshnode->setScale(m_prop.visual_size);
+		// TODO light fix
+		setColorParam(m_meshnode, video::SColor(255, 255, 255, 255));
 
 		// FIXME this tramples on the alphamode of the node
 		setSceneNodeMaterials(m_meshnode);
@@ -935,6 +935,10 @@ void GenericCAO::setNodeLight(const video::SColor &light_color)
 	if (m_prop.visual == "wielditem" || m_prop.visual == "item") {
 		if (m_wield_meshnode)
 			m_wield_meshnode->setNodeLightColor(light_color);
+		return;
+	}
+
+	if (m_prop.visual == "node") {
 		return;
 	}
 

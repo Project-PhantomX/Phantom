@@ -9198,7 +9198,8 @@ Player properties need to be saved manually.
     --   to be as large as a node, use `0.667` in `visual_size`
     -- "item" is similar to "wielditem" but ignores the 'wield_image' parameter.
     -- "node" looks exactly like a node in-world.
-    --   For this use 'textures = {nodename}'.
+    --   For this use 'textures = {nodename, tostring(param2)}'.
+    --   ^ TODO
 
     visual_size = {x = 1, y = 1, z = 1},
     -- Multipliers for the visual size. If `z` is not specified, `x` will be used
