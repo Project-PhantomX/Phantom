@@ -8,10 +8,23 @@
 #include "exceptions.h"
 #include "log.h"
 #include "util/serialize.h"
+#include "common/c_content.h"
 #include <sstream>
 #include <tuple>
 
 static const video::SColor NULL_BGCOLOR{0, 1, 1, 1};
+
+const struct EnumString es_ObjectVisual[] =
+{
+	{OBJECTVISUAL_UNKNOWN, "unknown"},
+	{OBJECTVISUAL_SPRITE, "sprite"},
+	{OBJECTVISUAL_UPRIGHT_SPRITE, "upright_sprite"},
+	{OBJECTVISUAL_CUBE, "cube"},
+	{OBJECTVISUAL_MESH, "mesh"},
+	{OBJECTVISUAL_ITEM, "item"},
+	{OBJECTVISUAL_WIELDITEM, "wielditem"},
+	{0, nullptr},
+};
 
 ObjectProperties::ObjectProperties()
 {
@@ -27,7 +40,7 @@ std::string ObjectProperties::dump() const
 	os << ", physical=" << physical;
 	os << ", collideWithObjects=" << collideWithObjects;
 	os << ", collisionbox=" << collisionbox.MinEdge << "," << collisionbox.MaxEdge;
-	os << ", visual=" << visual;
+	os << ", visual=" << es_ObjectVisual[visual].str;
 	os << ", mesh=" << mesh;
 	os << ", visual_size=" << visual_size;
 	os << ", textures=[";
@@ -136,7 +149,11 @@ void ObjectProperties::serialize(std::ostream &os) const
 	writeV3F32(os, selectionbox.MinEdge);
 	writeV3F32(os, selectionbox.MaxEdge);
 	Pointabilities::serializePointabilityType(os, pointable);
-	os << serializeString16(visual);
+
+	// Convert to string for compatibility
+	// New serialize versions should use the numeric enum value
+	os << serializeString16(es_ObjectVisual[visual].str);
+
 	writeV3F32(os, visual_size);
 	writeU16(os, textures.size());
 	for (const std::string &texture : textures) {
@@ -197,7 +214,13 @@ void ObjectProperties::deSerialize(std::istream &is)
 	selectionbox.MinEdge = readV3F32(is);
 	selectionbox.MaxEdge = readV3F32(is);
 	pointable = Pointabilities::deSerializePointabilityType(is);
-	visual = deSerializeString16(is);
+
+	int result;
+	if (string_to_enum(es_ObjectVisual, result, deSerializeString16(is)))
+		visual = static_cast<ObjectVisual>(result);
+	else
+		visual = OBJECTVISUAL_UNKNOWN;
+
 	visual_size = readV3F32(is);
 	textures.clear();
 	u32 texture_count = readU16(is);
