@@ -123,6 +123,7 @@ struct TileLayer
 	//! If true, the tile has its own color.
 	bool has_color = false;
 
+	/// @note not owned by this struct
 	std::vector<FrameSpec> *frames = nullptr;
 
 	/*!

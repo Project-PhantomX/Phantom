@@ -179,7 +179,8 @@ static void setColorParam(scene::ISceneNode *node, video::SColor color)
 		node->getMaterial(i).ColorParam = color;
 }
 
-static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n)
+static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n,
+	std::vector<MeshAnimationInfo> &animation)
 {
 	n.setParam1(0xff);
 
@@ -191,6 +192,7 @@ static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n)
 	}
 
 	auto mesh = make_irr<scene::SMesh>();
+	animation.clear();
 	for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
 		for (PreMeshBuffer &p : collector.prebuffers[layer]) {
 			if (p.layer.has_color)
@@ -203,6 +205,8 @@ static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n)
 			if (p.layer.material_flags & MATERIAL_FLAG_ANIMATION) {
 				const FrameSpec &frame = (*p.layer.frames)[0];
 				p.layer.texture = frame.texture;
+
+				animation.emplace_back(MeshAnimationInfo{mesh->getMeshBufferCount(), 0, p.layer});
 			}
 
 			auto buf = make_irr<scene::SMeshBuffer>();
@@ -215,7 +219,6 @@ static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n)
 				buf->Material.PolygonOffsetSlopeScale = -1;
 				buf->Material.PolygonOffsetDepthBias = -1;
 			}
-			// TODO alphamode trampled on later
 			p.layer.applyMaterialOptions(buf->Material);
 
 			mesh->addMeshBuffer(buf.get());
@@ -617,6 +620,8 @@ void GenericCAO::removeFromScene(bool permanent)
 		m_spritenode = nullptr;
 	}
 
+	m_meshnode_animation.clear();
+
 	if (m_matrixnode) {
 		m_matrixnode->remove();
 		m_matrixnode->drop();
@@ -802,19 +807,17 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 	} else if (m_prop.visual == "node") {
 		MapNode n;
 		n.setContent(m_client->ndef()->getId(m_prop.textures.at(0)));
-		auto *mesh = generateNodeMesh(m_client->ndef(), n);
+		auto *mesh = generateNodeMesh(m_client->ndef(), n, m_meshnode_animation);
 
 		m_meshnode = m_smgr->addMeshSceneNode(mesh, m_matrixnode);
+		m_meshnode->setSharedMaterials(true);
 		m_meshnode->grab();
 		mesh->drop();
 
 		m_meshnode->setScale(m_prop.visual_size);
 
+		// FIXME this tramples on the alphamode of the node
 		setSceneNodeMaterials(m_meshnode);
-
-		m_meshnode->forEachMaterial([this] (auto &mat) {
-			mat.BackfaceCulling = m_prop.backface_culling;
-		});
 	} else {
 		infostream<<"GenericCAO::addToScene(): \""<<m_prop.visual
 				<<"\" not supported"<<std::endl;
@@ -1333,6 +1336,23 @@ void GenericCAO::updateTexturePos()
 			auto mesh = m_meshnode->getMesh();
 			setMeshBufferTextureCoords(mesh->getMeshBuffer(0), t, 4);
 			setMeshBufferTextureCoords(mesh->getMeshBuffer(1), t, 4);
+		} else if (m_prop.visual == "node") {
+			// same calculation as MapBlockMesh::animate() with a global timer
+			const float time = m_client->getAnimationTime();
+			for (auto &it : m_meshnode_animation) {
+				const TileLayer &tile = it.tile;
+				int frameno = (int)(time * 1000 / tile.animation_frame_length_ms)
+					% tile.animation_frame_count;
+
+				if (frameno == it.frame)
+					continue;
+				it.frame = frameno;
+
+				auto *buf = m_meshnode->getMesh()->getMeshBuffer(it.i);
+
+				const FrameSpec &frame = (*tile.frames)[frameno];
+				buf->getMaterial().setTexture(0, frame.texture);
+			}
 		}
 	}
 }
