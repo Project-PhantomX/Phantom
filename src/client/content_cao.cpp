@@ -195,9 +195,13 @@ static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n,
 	animation.clear();
 	for (int layer = 0; layer < MAX_TILE_LAYERS; layer++) {
 		for (PreMeshBuffer &p : collector.prebuffers[layer]) {
+			// reset the pre-computed light data stored in the vertex color,
+			// since we do that ourselves via updateLight().
+			for (auto &v : p.vertices)
+				v.Color.set(0xFFFFFFFF);
+			// but still apply the tile color
 			p.applyTileColor();
 
-			// TOOD support this
 			if (p.layer.material_flags & MATERIAL_FLAG_ANIMATION) {
 				const FrameSpec &frame = (*p.layer.frames)[0];
 				p.layer.texture = frame.texture;
@@ -813,8 +817,6 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		mesh->drop();
 
 		m_meshnode->setScale(m_prop.visual_size);
-		// TODO light fix
-		setColorParam(m_meshnode, video::SColor(255, 255, 255, 255));
 
 		// FIXME this tramples on the alphamode of the node
 		setSceneNodeMaterials(m_meshnode);
@@ -917,8 +919,7 @@ void GenericCAO::updateLight(u32 day_night_ratio)
 	if (!pos_ok)
 		light_at_pos = LIGHT_SUN;
 
-	// Initialize with full alpha, otherwise entity won't be visible
-	video::SColor light{0xFFFFFFFF};
+	video::SColor light;
 
 	// Encode light into color, adding a small boost
 	// based on the entity glow.
@@ -935,10 +936,6 @@ void GenericCAO::setNodeLight(const video::SColor &light_color)
 	if (m_prop.visual == "wielditem" || m_prop.visual == "item") {
 		if (m_wield_meshnode)
 			m_wield_meshnode->setNodeLightColor(light_color);
-		return;
-	}
-
-	if (m_prop.visual == "node") {
 		return;
 	}
 
