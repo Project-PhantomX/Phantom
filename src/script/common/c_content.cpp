@@ -370,18 +370,6 @@ void read_object_properties(lua_State *L, int index,
 	}
 	lua_pop(L, 1);
 
-	lua_getfield(L, -1, "colors");
-	if (lua_istable(L, -1)) {
-		int table = lua_gettop(L);
-		prop->colors.clear();
-		for (lua_pushnil(L); lua_next(L, table); lua_pop(L, 1)) {
-			video::SColor color(255, 255, 255, 255);
-			read_color(L, -1, &color);
-			prop->colors.push_back(color);
-		}
-	}
-	lua_pop(L, 1);
-
 	lua_getfield(L, -1, "spritediv");
 	if(lua_istable(L, -1))
 		prop->spritediv = read_v2s16(L, -1);
@@ -487,14 +475,6 @@ void push_object_properties(lua_State *L, const ObjectProperties *prop)
 		lua_rawseti(L, -2, i++);
 	}
 	lua_setfield(L, -2, "textures");
-
-	lua_createtable(L, prop->colors.size(), 0);
-	i = 1;
-	for (const video::SColor &color : prop->colors) {
-		push_ARGB8(L, color);
-		lua_rawseti(L, -2, i++);
-	}
-	lua_setfield(L, -2, "colors");
 
 	push_v2s16(L, prop->spritediv);
 	lua_setfield(L, -2, "spritediv");

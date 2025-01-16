@@ -9213,9 +9213,6 @@ Player properties need to be saved manually.
     -- "mesh" requires one texture for each mesh buffer/material (in order)
     -- Deprecated usage of "wielditem" expects 'textures = {itemname}' (see 'visual' above).
 
-    colors = {},
-    -- Number of required colors depends on visual
-
     use_texture_alpha = false,
     -- Use texture's alpha channel.
     -- Excludes "upright_sprite" and "wielditem".
