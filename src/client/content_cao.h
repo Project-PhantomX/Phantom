@@ -75,6 +75,8 @@ struct MeshAnimationInfo {
 class GenericCAO : public ClientActiveObject
 {
 private:
+	static constexpr auto EMT_INVALID = video::EMT_FORCE_32BIT;
+
 	// Only set at initialization
 	std::string m_name = "";
 	bool m_is_player = false;
@@ -100,8 +102,7 @@ private:
 	std::vector<MeshAnimationInfo> m_meshnode_animation;
 
 	// Material
-	video::E_MATERIAL_TYPE m_material_type;
-	f32 m_material_type_param;
+	video::E_MATERIAL_TYPE m_material_type = EMT_INVALID;
 
 	// Movement
 	v3f m_position = v3f(0.0f, 10.0f * BS, 0);

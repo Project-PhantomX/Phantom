@@ -179,15 +179,17 @@ static void setColorParam(scene::ISceneNode *node, video::SColor color)
 		node->getMaterial(i).ColorParam = color;
 }
 
-static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n,
+static scene::SMesh *generateNodeMesh(Client *client, MapNode n,
 	std::vector<MeshAnimationInfo> &animation)
 {
-	n.setParam1(0xff);
+	auto *ndef = client->ndef();
+	auto *shdsrc = client->getShaderSource();
 
 	MeshCollector collector(v3f(0), v3f());
 	{
 		MeshMakeData mmd(ndef, 1, MeshGrid{1});
-		mmd.fillSingleNode(n, MapNode(CONTENT_AIR, 0xff));
+		n.setParam1(0xff);
+		mmd.fillSingleNode(n);
 		MapblockMeshGenerator(&mmd, &collector).generate();
 	}
 
@@ -214,12 +216,15 @@ static scene::SMesh *generateNodeMesh(const NodeDefManager *ndef, MapNode n,
 					&p.indices[0], p.indices.size());
 
 			// Set up material
-			buf->Material.setTexture(0, p.layer.texture);
+			auto &mat = buf->Material;
+			mat.setTexture(0, p.layer.texture);
+			u32 shader_id = shdsrc->getShader("object_shader", p.layer.material_type, NDT_NORMAL);
+			mat.MaterialType = shdsrc->getShaderInfo(shader_id).material;
 			if (layer == 1) {
-				buf->Material.PolygonOffsetSlopeScale = -1;
-				buf->Material.PolygonOffsetDepthBias = -1;
+				mat.PolygonOffsetSlopeScale = -1;
+				mat.PolygonOffsetDepthBias = -1;
 			}
-			p.layer.applyMaterialOptions(buf->Material);
+			p.layer.applyMaterialOptionsWithShaders(mat);
 
 			mesh->addMeshBuffer(buf.get());
 		}
@@ -652,8 +657,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 
 	infostream << "GenericCAO::addToScene(): " << m_prop.visual << std::endl;
 
-	m_material_type_param = 0.5f; // May cut off alpha < 128 depending on m_material_type
-
+	if (m_prop.visual != "node" && m_prop.visual != "wielditem" && m_prop.visual != "item")
 	{
 		IShaderSource *shader_source = m_client->getShaderSource();
 		MaterialType material_type;
@@ -667,13 +671,17 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 
 		u32 shader_id = shader_source->getShader("object_shader", material_type, NDT_NORMAL);
 		m_material_type = shader_source->getShaderInfo(shader_id).material;
+	} else {
+		// Not used, so make sure it's not valid
+		m_material_type = EMT_INVALID;
 	}
 
 	m_matrixnode = m_smgr->addDummyTransformationSceneNode();
 	m_matrixnode->grab();
 
 	auto setMaterial = [this] (video::SMaterial &mat) {
-		mat.MaterialType = m_material_type;
+		if (m_material_type != EMT_INVALID)
+			mat.MaterialType = m_material_type;
 		mat.FogEnable = true;
 		mat.forEachTexture([] (auto &tex) {
 			tex.MinFilter = video::ETMINF_NEAREST_MIPMAP_NEAREST;
@@ -809,7 +817,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		n.setContent(m_client->ndef()->getId(m_prop.textures.at(0)));
 		if (m_prop.textures.size() > 1)
 			n.setParam2(stoi(m_prop.textures[1], 0, 255));
-		auto *mesh = generateNodeMesh(m_client->ndef(), n, m_meshnode_animation);
+		auto *mesh = generateNodeMesh(m_client, n, m_meshnode_animation);
 
 		m_meshnode = m_smgr->addMeshSceneNode(mesh, m_matrixnode);
 		m_meshnode->setSharedMaterials(true);
@@ -1379,7 +1387,6 @@ void GenericCAO::updateTextures(std::string mod)
 
 			video::SMaterial &material = m_spritenode->getMaterial(0);
 			material.MaterialType = m_material_type;
-			material.MaterialTypeParam = m_material_type_param;
 			material.setTexture(0, tsrc->getTextureForMesh(texturestring));
 
 			material.forEachTexture([=] (auto &tex) {
@@ -1408,7 +1415,6 @@ void GenericCAO::updateTextures(std::string mod)
 				// Set material flags and texture
 				video::SMaterial &material = m_animated_meshnode->getMaterial(i);
 				material.MaterialType = m_material_type;
-				material.MaterialTypeParam = m_material_type_param;
 				material.TextureLayers[0].Texture = texture;
 				material.BackfaceCulling = m_prop.backface_culling;
 
@@ -1440,7 +1446,6 @@ void GenericCAO::updateTextures(std::string mod)
 				// Set material flags and texture
 				video::SMaterial &material = m_meshnode->getMaterial(i);
 				material.MaterialType = m_material_type;
-				material.MaterialTypeParam = m_material_type_param;
 				material.setTexture(0, tsrc->getTextureForMesh(texturestring));
 				material.getTextureMatrix(0).makeIdentity();
 
