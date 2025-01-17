@@ -191,8 +191,14 @@ void ObjectProperties::serialize(std::ostream &os) const
 }
 
 namespace {
+	// Type-safe wrapper for bools as u8
+	inline bool readBool(std::istream &is)
+	{
+		return readU8(is) != 0;
+	}
+
 	// Wrapper for primitive reading functions that don't throw (awful)
-	template <typename T, auto (reader)(std::istream& is)>
+	template <typename T, T (reader)(std::istream& is)>
 	bool tryRead(T& val, std::istream& is)
 	{
 		T tmp = reader(is);
@@ -257,10 +263,10 @@ void ObjectProperties::deSerialize(std::istream &is)
 		return;
 	}
 
-	if (!tryRead<bool, readU8>(shaded, is))
+	if (!tryRead<bool, readBool>(shaded, is))
 		return;
 
-	if (!tryRead<bool, readU8>(show_on_minimap, is))
+	if (!tryRead<bool, readBool>(show_on_minimap, is))
 		return;
 
 	auto bgcolor = readARGB8(is);
@@ -269,7 +275,7 @@ void ObjectProperties::deSerialize(std::istream &is)
 	else
 		nametag_bgcolor = std::nullopt;
 
-	if (!tryRead<bool, readU8>(rotate_selectionbox, is))
+	if (!tryRead<bool, readBool>(rotate_selectionbox, is))
 		return;
 
 	if (!tryRead<content_t, readU16>(node.param0, is))
