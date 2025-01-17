@@ -814,6 +814,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		m_wield_meshnode->setScale(m_prop.visual_size / 2.0f);
 	} else if (m_prop.visual == "node") {
 		auto *mesh = generateNodeMesh(m_client, m_prop.node, m_meshnode_animation);
+		assert(mesh);
 
 		m_meshnode = m_smgr->addMeshSceneNode(mesh, m_matrixnode);
 		m_meshnode->setSharedMaterials(true);
@@ -822,7 +823,6 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 
 		m_meshnode->setScale(m_prop.visual_size);
 
-		// FIXME this tramples on the alphamode of the node
 		setSceneNodeMaterials(m_meshnode);
 	} else {
 		infostream<<"GenericCAO::addToScene(): \""<<m_prop.visual
@@ -1215,7 +1215,7 @@ void GenericCAO::step(float dtime, ClientEnvironment *env)
 			m_anim_frame = 0;
 	}
 
-	updateTexturePos();
+	updateTextureAnim();
 
 	if(m_reset_textures_timer >= 0)
 	{
@@ -1276,7 +1276,7 @@ static void setMeshBufferTextureCoords(scene::IMeshBuffer *buf, const v2f *uv, u
 	buf->setDirty(scene::EBT_VERTEX);
 }
 
-void GenericCAO::updateTexturePos()
+void GenericCAO::updateTextureAnim()
 {
 	if(m_spritenode)
 	{
@@ -1636,7 +1636,7 @@ bool GenericCAO::visualExpiryRequired(const ObjectProperties &new_) const
 	/* Visuals do not need to be expired for:
 	 * - nametag props: handled by updateNametag()
 	 * - textures:      handled by updateTextures()
-	 * - sprite props:  handled by updateTexturePos()
+	 * - sprite props:  handled by updateTextureAnim()
 	 * - glow:          handled by updateLight()
 	 * - any other properties that do not change appearance
 	 */
@@ -1646,10 +1646,10 @@ bool GenericCAO::visualExpiryRequired(const ObjectProperties &new_) const
 	// Ordered to compare primitive types before std::vectors
 	return old.backface_culling != new_.backface_culling ||
 		old.is_visible != new_.is_visible ||
-		old.node != new_.node ||
-		old.mesh != new_.mesh ||
 		old.shaded != new_.shaded ||
 		old.use_texture_alpha != new_.use_texture_alpha ||
+		old.node != new_.node ||
+		old.mesh != new_.mesh ||
 		old.visual != new_.visual ||
 		old.visual_size != new_.visual_size ||
 		old.wield_item != new_.wield_item ||
@@ -1760,7 +1760,7 @@ void GenericCAO::processMessage(const std::string &data)
 		m_anim_framelength = framelength;
 		m_tx_select_horiz_by_yawpitch = select_horiz_by_yawpitch;
 
-		updateTexturePos();
+		updateTextureAnim();
 	} else if (cmd == AO_CMD_SET_PHYSICS_OVERRIDE) {
 		float override_speed = readF32(is);
 		float override_jump = readF32(is);

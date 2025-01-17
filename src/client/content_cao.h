@@ -26,7 +26,6 @@ class Camera;
 class Client;
 struct Nametag;
 struct MinimapMarker;
-struct TileLayer;
 
 /*
 	SmoothTranslator and other helpers
@@ -277,7 +276,7 @@ public:
 
 	void step(float dtime, ClientEnvironment *env) override;
 
-	void updateTexturePos();
+	void updateTextureAnim();
 
 	// ffs this HAS TO BE a string copy! See #5739 if you think otherwise
 	// Reason: updateTextures(m_previous_texture_modifier);
