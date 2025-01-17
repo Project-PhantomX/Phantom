@@ -157,6 +157,10 @@ struct alignas(u32) MapNode
 				&& param1 == other.param1
 				&& param2 == other.param2);
 	}
+	bool operator!=(const MapNode &other) const noexcept
+	{
+		return !(*this == other);
+	}
 
 	// To be used everywhere
 	content_t getContent() const noexcept

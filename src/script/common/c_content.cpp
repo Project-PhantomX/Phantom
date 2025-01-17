@@ -382,6 +382,12 @@ void read_object_properties(lua_State *L, int index,
 	}
 	lua_pop(L, 1);
 
+	lua_getfield(L, -1, "node");
+	if (lua_istable(L, -1)) {
+		prop->node = readnode(L, -1);
+	}
+	lua_pop(L, 1);
+
 	lua_getfield(L, -1, "spritediv");
 	if(lua_istable(L, -1))
 		prop->spritediv = read_v2s16(L, -1);
@@ -496,6 +502,8 @@ void push_object_properties(lua_State *L, const ObjectProperties *prop)
 	}
 	lua_setfield(L, -2, "colors");
 
+	pushnode(L, prop->node);
+	lua_setfield(L, -2, "node");
 	push_v2s16(L, prop->spritediv);
 	lua_setfield(L, -2, "spritediv");
 	push_v2s16(L, prop->initial_sprite_basepos);

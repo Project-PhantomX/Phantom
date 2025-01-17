@@ -813,11 +813,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 
 		m_wield_meshnode->setScale(m_prop.visual_size / 2.0f);
 	} else if (m_prop.visual == "node") {
-		MapNode n;
-		n.setContent(m_client->ndef()->getId(m_prop.textures.at(0)));
-		if (m_prop.textures.size() > 1)
-			n.setParam2(stoi(m_prop.textures[1], 0, 255));
-		auto *mesh = generateNodeMesh(m_client, n, m_meshnode_animation);
+		auto *mesh = generateNodeMesh(m_client, m_prop.node, m_meshnode_animation);
 
 		m_meshnode = m_smgr->addMeshSceneNode(mesh, m_matrixnode);
 		m_meshnode->setSharedMaterials(true);
@@ -1650,6 +1646,7 @@ bool GenericCAO::visualExpiryRequired(const ObjectProperties &new_) const
 	// Ordered to compare primitive types before std::vectors
 	return old.backface_culling != new_.backface_culling ||
 		old.is_visible != new_.is_visible ||
+		old.node != new_.node ||
 		old.mesh != new_.mesh ||
 		old.shaded != new_.shaded ||
 		old.use_texture_alpha != new_.use_texture_alpha ||

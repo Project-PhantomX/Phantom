@@ -9198,8 +9198,7 @@ Player properties need to be saved manually.
     --   to be as large as a node, use `0.667` in `visual_size`
     -- "item" is similar to "wielditem" but ignores the 'wield_image' parameter.
     -- "node" looks exactly like a node in-world.
-    --   For this use 'textures = {nodename, tostring(param2)}'.
-    --   ^ TODO
+    --   Note that visual effects like waving or liquid reflections will not work.
 
     visual_size = {x = 1, y = 1, z = 1},
     -- Multipliers for the visual size. If `z` is not specified, `x` will be used
@@ -9219,11 +9218,15 @@ Player properties need to be saved manually.
     colors = {},
     -- Number of required colors depends on visual
 
+    node = {name = "ignore", param1=0, param2=0},
+    -- Node to show when using the "node" visual
+
     use_texture_alpha = false,
     -- Use texture's alpha channel.
     -- Excludes "upright_sprite" and "wielditem".
     -- Note: currently causes visual issues when viewed through other
     -- semi-transparent materials such as water.
+    -- Note: ignored for "item", "wielditem" and "node" visual.
 
     spritediv = {x = 1, y = 1},
     -- Used with spritesheet textures for animation and/or frame selection
@@ -9263,6 +9266,7 @@ Player properties need to be saved manually.
 
     backface_culling = true,
     -- Set to false to disable backface_culling for model
+    -- Note: only used by "mesh" and "cube" visual
 
     glow = 0,
     -- Add this much extra lighting when calculating texture color.
@@ -9298,6 +9302,7 @@ Player properties need to be saved manually.
 
     shaded = true,
     -- Setting this to 'false' disables diffuse lighting of entity
+    -- Note: ignored for "item", "wielditem" and "node" visual
 
     show_on_minimap = false,
     -- Defaults to true for players, false for other entities.
