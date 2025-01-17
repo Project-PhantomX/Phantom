@@ -277,11 +277,13 @@ const std::array<const char *, 33> object_property_keys = {
 	"shaded",
 	"damage_texture_modifier",
 	"show_on_minimap",
+	// "node" is intentionally not here as it's gated behind `fallback` below!
 };
 
 /******************************************************************************/
 void read_object_properties(lua_State *L, int index,
-		ServerActiveObject *sao, ObjectProperties *prop, IItemDefManager *idef)
+		ServerActiveObject *sao, ObjectProperties *prop, IItemDefManager *idef,
+		bool fallback)
 {
 	if(index < 0)
 		index = lua_gettop(L) + 1 + index;
@@ -382,11 +384,15 @@ void read_object_properties(lua_State *L, int index,
 	}
 	lua_pop(L, 1);
 
-	lua_getfield(L, -1, "node");
-	if (lua_istable(L, -1)) {
-		prop->node = readnode(L, -1);
+	// This hack exists because the name 'node' easily collides with mods own
+	// usage (or in this case literally builtin/game/falling.lua).
+	if (!fallback) {
+		lua_getfield(L, -1, "node");
+		if (lua_istable(L, -1)) {
+			prop->node = readnode(L, -1);
+		}
+		lua_pop(L, 1);
 	}
-	lua_pop(L, 1);
 
 	lua_getfield(L, -1, "spritediv");
 	if(lua_istable(L, -1))
