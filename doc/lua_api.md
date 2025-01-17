@@ -1500,7 +1500,7 @@ Look for examples in `games/devtest` or `games/minetest_game`.
 * `allfaces`
     * Often used for partially-transparent nodes.
     * External sides of textures, and unlike other drawtypes, the external sides
-      of other blocks, are visible from the inside.
+      of other nodes, are visible from the inside.
 * `allfaces_optional`
     * Often used for leaves nodes.
     * This switches between `normal`, `glasslike` and `allfaces` according to
@@ -9197,7 +9197,7 @@ Player properties need to be saved manually.
     --   Wielditems are scaled a bit. If you want a wielditem to appear
     --   to be as large as a node, use `0.667` in `visual_size`
     -- "item" is similar to "wielditem" but ignores the 'wield_image' parameter.
-    -- "node" looks exactly like a node in-world.
+    -- "node" looks exactly like a node in-world (supported since 5.11.0)
     --   Note that visual effects like waving or liquid reflections will not work.
 
     visual_size = {x = 1, y = 1, z = 1},
