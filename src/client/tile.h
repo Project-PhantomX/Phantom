@@ -9,7 +9,7 @@
 #include <vector>
 #include <SMaterial.h>
 
-enum MaterialType{
+enum MaterialType : u8 {
 	TILE_MATERIAL_BASIC,
 	TILE_MATERIAL_ALPHA,
 	TILE_MATERIAL_LIQUID_TRANSPARENT,
@@ -98,8 +98,9 @@ struct TileLayer
 		case TILE_MATERIAL_LIQUID_TRANSPARENT:
 		case TILE_MATERIAL_WAVING_LIQUID_TRANSPARENT:
 			return true;
+		default:
+			return false;
 		}
-		return false;
 	}
 
 	// Ordered for size, please do not reorder
@@ -113,7 +114,7 @@ struct TileLayer
 	u16 animation_frame_length_ms = 0;
 	u16 animation_frame_count = 1;
 
-	u8 material_type = TILE_MATERIAL_BASIC;
+	MaterialType material_type = TILE_MATERIAL_BASIC;
 	u8 material_flags =
 		//0 // <- DEBUG, Use the one below
 		MATERIAL_FLAG_BACKFACE_CULLING |
@@ -123,6 +124,7 @@ struct TileLayer
 	//! If true, the tile has its own color.
 	bool has_color = false;
 
+	/// @note not owned by this struct
 	std::vector<FrameSpec> *frames = nullptr;
 
 	/*!
