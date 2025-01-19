@@ -40,7 +40,7 @@ std::string ObjectProperties::dump() const
 	os << ", physical=" << physical;
 	os << ", collideWithObjects=" << collideWithObjects;
 	os << ", collisionbox=" << collisionbox.MinEdge << "," << collisionbox.MaxEdge;
-	os << ", visual=" << es_ObjectVisual[visual].str;
+	os << ", visual=" << enum_to_string(es_ObjectVisual, visual);
 	os << ", mesh=" << mesh;
 	os << ", visual_size=" << visual_size;
 	os << ", textures=[";
@@ -152,7 +152,7 @@ void ObjectProperties::serialize(std::ostream &os) const
 
 	// Convert to string for compatibility
 	// New serialize versions should use the numeric enum value
-	os << serializeString16(es_ObjectVisual[visual].str);
+	os << serializeString16(enum_to_string(es_ObjectVisual, visual));
 
 	writeV3F32(os, visual_size);
 	writeU16(os, textures.size());

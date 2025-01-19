@@ -479,7 +479,7 @@ void push_object_properties(lua_State *L, const ObjectProperties *prop)
 	lua_setfield(L, -2, "selectionbox");
 	push_pointability_type(L, prop->pointable);
 	lua_setfield(L, -2, "pointable");
-	lua_pushstring(L, es_ObjectVisual[prop->visual].str);
+	lua_pushstring(L, enum_to_string(es_ObjectVisual, prop->visual));
 	lua_setfield(L, -2, "visual");
 	lua_pushlstring(L, prop->mesh.c_str(), prop->mesh.size());
 	lua_setfield(L, -2, "mesh");
@@ -1344,6 +1344,17 @@ bool string_to_enum(const EnumString *spec, int &result,
 		esp++;
 	}
 	return false;
+}
+
+/******************************************************************************/
+const char *enum_to_string(const EnumString *spec, int num)
+{
+	if (num < 0)
+		return nullptr;
+	// assume array order matches enum order
+	auto *p = &spec[num];
+	assert(p->num == num);
+	return p->str;
 }
 
 /******************************************************************************/

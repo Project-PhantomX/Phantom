@@ -33,6 +33,7 @@
 #include "client/shader.h"
 #include "client/minimap.h"
 #include <quaternion.h>
+#include "common/c_content.h" // enum_to_string
 
 class Settings;
 struct ToolCapabilities;
@@ -597,7 +598,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 	if (!m_prop.is_visible)
 		return;
 
-	infostream << "GenericCAO::addToScene(): " << es_ObjectVisual[m_prop.visual].str << std::endl;
+	infostream << "GenericCAO::addToScene(): " << enum_to_string(es_ObjectVisual, m_prop.visual) << std::endl;
 
 	m_material_type_param = 0.5f; // May cut off alpha < 128 depending on m_material_type
 
@@ -768,7 +769,7 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 		break;
 	} default:
 		infostream << "GenericCAO::addToScene(): \""
-				<< es_ObjectVisual[m_prop.visual].str
+				<< enum_to_string(es_ObjectVisual, m_prop.visual)
 				<< "\" not supported"<<std::endl;
 		break;
 	}
