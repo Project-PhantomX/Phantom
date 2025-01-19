@@ -1,7 +1,7 @@
 // Minetest
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "settings.h"
+#include "defaultsettings.h"
 #include "server.h"
 
 void migrate_settings()
@@ -28,4 +28,17 @@ void migrate_settings()
 		}
 		g_settings->remove("disable_anticheat");
 	}
+
+	// Use keycodes for keybindings for missing keys
+	// if the keymap was changed in an earlier version
+#if USE_SDL2
+	if (!g_settings->existsLocal("save_keys_as_scancodes"))
+		for (const auto &name: g_settings->getNames())
+			if (auto value = g_settings->get(name);
+					str_starts_with(name, "keymap_") && !str_starts_with(value, "<")) {
+				g_settings->setBool("save_keys_as_scancodes", false);
+				set_keyboard_defaults(g_settings, true);
+				break;
+			}
+#endif
 }
