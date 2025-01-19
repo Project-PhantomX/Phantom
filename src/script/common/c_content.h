@@ -167,9 +167,12 @@ std::vector<ItemStack> read_items            (lua_State *L,
 void               push_simplesoundspec      (lua_State *L,
                                               const SoundSpec &spec);
 
+// TODO move EnumString to its own file to not import script code everywhere
 bool               string_to_enum            (const EnumString *spec,
                                               int &result,
                                               const std::string &str);
+
+const char*        enum_to_string            (const EnumString *spec, int num);
 
 bool               read_noiseparams          (lua_State *L, int index,
                                               NoiseParams *np);
