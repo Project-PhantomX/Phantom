@@ -151,7 +151,6 @@ void ObjectProperties::serialize(std::ostream &os) const
 	Pointabilities::serializePointabilityType(os, pointable);
 
 	// Convert to string for compatibility
-	// New serialize versions should use the numeric enum value
 	os << serializeString16(enum_to_string(es_ObjectVisual, visual));
 
 	writeV3F32(os, visual_size);
