@@ -6,6 +6,7 @@ Testing/*
 *.swp
 *.bak*
 *.orig
+.devcontainer/*
 .DS_Store
 # Vim
 *.vim
