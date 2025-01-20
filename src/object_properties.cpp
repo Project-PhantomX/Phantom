@@ -16,7 +16,6 @@ static const video::SColor NULL_BGCOLOR{0, 1, 1, 1};
 ObjectProperties::ObjectProperties()
 {
 	textures.emplace_back("no_texture.png");
-	colors.emplace_back(255,255,255,255);
 }
 
 std::string ObjectProperties::dump() const
@@ -33,12 +32,6 @@ std::string ObjectProperties::dump() const
 	os << ", textures=[";
 	for (const std::string &texture : textures) {
 		os << "\"" << texture << "\" ";
-	}
-	os << "]";
-	os << ", colors=[";
-	for (const video::SColor &color : colors) {
-		os << "\"" << color.getAlpha() << "," << color.getRed() << ","
-			<< color.getGreen() << "," << color.getBlue() << "\" ";
 	}
 	os << "]";
 	os << ", spritediv=" << spritediv;
@@ -75,7 +68,7 @@ static auto tie(const ObjectProperties &o)
 {
 	// Make sure to add new members to this list!
 	return std::tie(
-	o.textures, o.colors, o.collisionbox, o.selectionbox, o.visual, o.mesh,
+	o.textures, o.collisionbox, o.selectionbox, o.visual, o.mesh,
 	o.damage_texture_modifier, o.nametag, o.infotext, o.wield_item, o.visual_size,
 	o.nametag_color, o.nametag_bgcolor, o.spritediv, o.initial_sprite_basepos,
 	o.stepheight, o.automatic_rotate, o.automatic_face_movement_dir_offset,
@@ -148,10 +141,7 @@ void ObjectProperties::serialize(std::ostream &os) const
 	writeU8(os, makes_footstep_sound);
 	writeF32(os, automatic_rotate);
 	os << serializeString16(mesh);
-	writeU16(os, colors.size());
-	for (video::SColor color : colors) {
-		writeARGB8(os, color);
-	}
+	writeU16(os, 0); // colors field got removed
 	writeU8(os, collideWithObjects);
 	writeF32(os, stepheight);
 	writeU8(os, automatic_face_movement_dir);
@@ -210,11 +200,7 @@ void ObjectProperties::deSerialize(std::istream &is)
 	makes_footstep_sound = readU8(is);
 	automatic_rotate = readF32(is);
 	mesh = deSerializeString16(is);
-	colors.clear();
-	u32 color_count = readU16(is);
-	for (u32 i = 0; i < color_count; i++){
-		colors.push_back(readARGB8(is));
-	}
+	readU16(is); // colors field got removed
 	collideWithObjects = readU8(is);
 	stepheight = readF32(is);
 	automatic_face_movement_dir = readU8(is);

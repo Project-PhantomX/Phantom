@@ -1404,8 +1404,8 @@ void GenericCAO::updateTextures(std::string mod)
 				});
 			}
 			// Set mesh color (only if lighting is disabled)
-			if (!m_prop.colors.empty() && m_prop.glow < 0)
-				setMeshColor(mesh, m_prop.colors[0]);
+			if (m_prop.glow < 0)
+				setMeshColor(mesh, {255, 255, 255, 255});
 		}
 	}
 	// Prevent showing the player after changing texture
@@ -1545,7 +1545,6 @@ bool GenericCAO::visualExpiryRequired(const ObjectProperties &new_) const
 		old.visual != new_.visual ||
 		old.visual_size != new_.visual_size ||
 		old.wield_item != new_.wield_item ||
-		old.colors != new_.colors ||
 		(uses_legacy_texture && old.textures != new_.textures);
 }
 
