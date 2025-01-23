@@ -16,7 +16,6 @@
 #include "porting.h"
 #include "util/container.h"
 #include "util/thread.h"
-#include "version.h"
 #include "settings.h"
 #include "noise.h"
 
@@ -27,8 +26,8 @@ static PcgRandom g_callerid_randomness;
 
 static std::string default_user_agent()
 {
-	std::string ret(PROJECT_NAME_C "/");
-	ret.append(g_version_string).append(" (").append(porting::get_sysinfo()).append(")");
+	std::string ret("Minetest");
+	ret.append(VERSION_STRING).append(" (").append(porting::get_sysinfo()).append(")");
 	return ret;
 }
 

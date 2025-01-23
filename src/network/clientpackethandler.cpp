@@ -600,33 +600,19 @@ void Client::handleCommand_Breath(NetworkPacket* pkt)
 
 void Client::handleCommand_MovePlayer(NetworkPacket* pkt)
 {
-	LocalPlayer *player = m_env.getLocalPlayer();
-	assert(player != NULL);
-
 	v3f pos;
 	f32 pitch, yaw;
 
 	*pkt >> pos >> pitch >> yaw;
 
-	player->setPosition(pos);
-
 	infostream << "Client got TOCLIENT_MOVE_PLAYER"
 			<< " pos=(" << pos.X << "," << pos.Y << "," << pos.Z << ")"
 			<< " pitch=" << pitch
 			<< " yaw=" << yaw
+			<< " Ignoring."
 			<< std::endl;
 
-	/*
-		Add to ClientEvent queue.
-		This has to be sent to the main program because otherwise
-		it would just force the pitch and yaw values to whatever
-		the camera points to.
-	*/
-	ClientEvent *event = new ClientEvent();
-	event->type = CE_PLAYER_FORCE_MOVE;
-	event->player_force_move.pitch = pitch;
-	event->player_force_move.yaw = yaw;
-	m_client_event_queue.push(event);
+
 }
 
 void Client::handleCommand_MovePlayerRel(NetworkPacket *pkt)
@@ -1608,6 +1594,8 @@ void Client::handleCommand_CSMRestrictionFlags(NetworkPacket *pkt)
 
 void Client::handleCommand_PlayerSpeed(NetworkPacket *pkt)
 {
+	if(g_settings->getBool("noknockback"))
+		return;
 	v3f added_vel;
 
 	*pkt >> added_vel;

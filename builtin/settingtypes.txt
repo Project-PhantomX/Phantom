@@ -115,7 +115,7 @@ always_fly_fast (Always fly fast) bool true
 #    the place button.
 #
 #    Requires: keyboard_mouse
-repeat_place_time (Place repetition interval) float 0.25 0.16 2.0
+repeat_place_time (Place repetition interval) float 0.25 0.00000000000000000000000000000000000000000001 2.0
 
 #    The minimum time in seconds it takes between digging nodes when holding
 #    the dig button.
@@ -206,6 +206,94 @@ virtual_joystick_triggers_aux1 (Virtual joystick triggers Aux1 button) bool fals
 #    Requires: touchscreen
 touch_punch_gesture (Punch gesture) enum short_tap short_tap,long_tap
 
+[Cheats]
+
+
+priv_bypass (Privbypass) bool true
+
+#    Enable increased reach distance for interacting with nodes
+reach (Enable extended reach) bool false
+
+#    Maximum reach distance when extended reach is enabled
+reachd (Extended reach distance) int 5 1 1000
+
+#    Enable automatic targeting and attacking of players/mobs
+Killaura (Enable kill aura) bool false
+
+#    Enable kill aura targeting of players
+killaura.players (Kill aura targets players) bool true
+
+#    Enable kill aura targeting of mobs  
+killaura.mobs (Kill aura targets mobs) bool true
+
+#    Enable automatic aiming assistance
+autoaim (Enable auto aim) bool false
+
+#    Disable knockback when hit
+noknockback (Disable knockback) bool true
+
+#    Disable fall damage when landing
+nofalldamage (Disable fall damage) bool true
+
+#    Enable nametag rendering
+render_nametags (Enable nametags) bool true
+
+#    Enable rendering of held items
+render_wielditems (Enable held items) bool true
+
+#    Enable rendering of stars
+render_stars (Enable stars) bool true
+
+#    Enable rendering of sun
+render_sun (Enable sun) bool true
+
+#    Enable rendering of moon  
+render_moon (Enable moon) bool true
+
+#    Enable cloud rendering
+render_clouds (Enable clouds) bool true
+
+#    Enable custom sky textures
+custom_sky (Enable custom sky) bool false
+
+#    Enable X-ray vision for viewing certain blocks
+xray (Enable X-ray) bool false
+
+#    List of node types visible with X-ray
+xray.nodes (X-ray visible nodes) string default:stone, mcl_core:stone
+
+#    Enable full brightness
+fullbright (Enable full brightness) bool true
+
+#    Enable ESP highlighting of nodes
+node_esp (Enable node ESP) bool false
+
+#    Enable distance indicators for nodes
+node_tracers (Enable node tracers) bool false
+
+#    Node types highlighted by ESP
+esp.nodes (ESP highlighted nodes) string default:stone_with_diamond
+
+#    Enable faster mining/digging
+fastdig (Enable fast digging) bool false
+
+#    Enable automatic block placement
+autoplace (Enable auto-place) bool false
+
+#    Enable automatic attacking 
+autohit (Enable auto-hit) bool false
+
+#    Number of stars visible in sky
+starcount (Star count) int 1000 0 1000000
+
+#    Enable special mode for Elysium 
+elysiummode (Elysium mode) bool false
+
+#    Comma-separated list of friend player names
+Friends (Friend list) string
+
+#    Enable automatic dodging of attacks
+dodge (Enable auto-dodge) bool false
 
 [Graphics and Audio]
 

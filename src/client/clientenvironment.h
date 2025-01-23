@@ -11,9 +11,7 @@
 #include "config.h"
 #include <set>
 
-#if !IS_CLIENT_BUILD
-#error Do not include in server builds
-#endif
+
 
 class ClientSimpleObject;
 class ClientMap;

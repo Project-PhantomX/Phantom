@@ -1548,6 +1548,93 @@ bool GenericCAO::visualExpiryRequired(const ObjectProperties &new_) const
 		old.colors != new_.colors ||
 		(uses_legacy_texture && old.textures != new_.textures);
 }
+std::vector<std::string> str_split(const std::string& str, char delimiter) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(str);
+    std::string token;
+
+    while (std::getline(ss, token, delimiter)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+bool GenericCAO::Friends(GenericCAO* cao) {
+    const std::string &name = cao->getName();
+    std::vector<std::string> kf = str_split(g_settings->get("friends"), ',');
+    for (const auto& friend_name : kf) {
+        if (name == friend_name) return true;
+    }
+    return false;
+}
+// for ctf
+std::string getShirtColor(GenericCAO *cao) {
+    std::vector<std::string> textures = cao->getProperties().textures;
+
+    for (std::string& texture : textures) {
+        // Split the texture string from ')'
+        std::vector<std::string> parts = str_split(texture, ')');
+
+        for (std::string& part : parts) {
+            // Look for the keyword 'shirt' followed by '.png'
+            std::size_t shirt_pos = part.find("shirt.png");
+
+            if (shirt_pos != std::string::npos) {
+                // Return the final 6 characters as the color code
+                return part.substr(part.size() - 6);
+            }
+        }
+    }
+
+    return ""; // Nothing found
+}
+
+/*
+ * Determines if another CAO (Client Active Object) is considered friendly to the local player
+ * 
+ * @param cao Pointer to the GenericCAO to check for friendliness
+ * 
+ * @return true if:
+ *         - The given CAO is the local player itself
+ *         - In multiplayer mode, the given CAO has the same shirt color as the local player
+ *           and "elysiummode" setting is disabled
+ *         false otherwise
+ * 
+ * Note: In singleplayer mode or if the local player CAO cannot be retrieved,
+ *       this function returns false
+ */
+bool GenericCAO::isPlayerFriendly(GenericCAO *cao)
+{
+
+	ClientEnvironment &env = m_client->getEnv();
+	LocalPlayer *player = env.getLocalPlayer();
+    if (cao->isLocalPlayer()) {
+            return true;
+    }
+
+    GenericCAO *me = player->getCAO();
+    if (!me) {
+        return false;
+    }
+
+    if (!m_client->m_simple_singleplayer_mode) {
+        std::string myShirtColor = getShirtColor(me);
+
+        if (myShirtColor.empty()) {
+			return false;
+        }
+        std::string shirtColor = getShirtColor(cao);
+        if(!shirtColor.empty() && shirtColor == myShirtColor && !g_settings->getBool("elysiummode")) {
+            return true;
+        } else if (g_settings->getBool("elysiummode")) {
+			return false;
+		}
+    }
+
+        
+    return false;
+}
+
 
 void GenericCAO::processMessage(const std::string &data)
 {

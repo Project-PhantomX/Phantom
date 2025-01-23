@@ -82,7 +82,7 @@ Sky::Sky(s32 id, RenderingEngine *rendering_engine, ITextureSource *tsrc, IShade
 	m_sky_params.body_orbit_tilt = g_settings->getFloat("shadow_sky_body_orbit_tilt", -60., 60.);
 	m_sky_params.fog_start = rangelim(g_settings->getFloat("fog_start"), 0.0f, 0.99f);
 
-	setStarCount(1000);
+	setStarCount(g_settings->getFloat("starcount"));
 }
 
 void Sky::OnRegisterSceneNode()
@@ -231,7 +231,7 @@ void Sky::render()
 		}
 
 		// Draw stars before sun and moon to be behind them
-		if (m_star_params.visible)
+		if (m_star_params.visible && g_settings->getBool("render_stars"))
 			draw_stars(driver, wicked_time_of_day);
 
 		// Draw sunrise/sunset horizon glow texture
@@ -261,11 +261,11 @@ void Sky::render()
 		}
 
 		// Draw sun
-		if (m_sun_params.visible)
+		if (m_sun_params.visible && g_settings->getBool("render_sun"))
 			draw_sun(driver, suncolor, suncolor2, wicked_time_of_day);
 
 		// Draw moon
-		if (m_moon_params.visible)
+		if (m_moon_params.visible && g_settings->getBool("render_moon"))
 			draw_moon(driver, mooncolor, mooncolor2, wicked_time_of_day);
 
 		// Draw far cloudy fog thing below all horizons in front of sun, moon

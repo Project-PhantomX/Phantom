@@ -163,6 +163,12 @@ public:
 
 	bool isImmortal() const;
 
+
+	
+	u16 getHP() const {return m_hp;}
+	bool Friends(GenericCAO *cao);
+	bool isPlayerFriendly(GenericCAO *cao);
+
 	inline const ObjectProperties &getProperties() const { return m_prop; }
 
 	inline const std::string &getName() const { return m_name; }

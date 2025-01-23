@@ -16,8 +16,27 @@
 #define STRINGIFY(x) #x
 #define STR(x) STRINGIFY(x)
 
+std::string getVersionHash(int length) {
+	const std::string characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	std::string randomString;
+
+	// Seed the random number generator
+	static bool seeded = false;
+	if (!seeded) {
+		std::srand(static_cast<unsigned int>(std::time(0)));
+		seeded = true;
+	}
+
+	for (int i = 0; i < length; ++i) {
+		// Generate a random index to select a character from the characters string
+		int randomIndex = std::rand() % characters.size();
+		randomString += characters[randomIndex];
+	}
+
+	return randomString;
+}
 const char *g_version_string = VERSION_STRING;
-const char *g_version_hash = VERSION_GITHASH;
+const char *g_version_hash = (getVersionHash(7)).c_str();
 const char *g_build_info =
 	"BUILD_TYPE=" BUILD_TYPE "\n"
 	"RUN_IN_PLACE=" STR(RUN_IN_PLACE) "\n"

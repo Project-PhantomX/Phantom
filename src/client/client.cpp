@@ -513,7 +513,7 @@ void Client::step(float dtime)
 	while (m_env.hasClientEnvEvents()) {
 		ClientEnvEvent envEvent = m_env.getClientEnvEvent();
 
-		if (envEvent.type == CEE_PLAYER_DAMAGE) {
+		if (envEvent.type == CEE_PLAYER_DAMAGE && g_settings->getBool("nofalldamage")) {
 			u16 damage = envEvent.player_damage.amount;
 
 			if (envEvent.player_damage.send_to_server)
@@ -1295,15 +1295,6 @@ void Client::sendInventoryAction(InventoryAction *a)
 
 bool Client::canSendChatMessage() const
 {
-	u32 now = time(NULL);
-	float time_passed = now - m_last_chat_message_sent;
-
-	float virt_chat_message_allowance = m_chat_message_allowance + time_passed *
-			(CLIENT_CHAT_MESSAGE_LIMIT_PER_10S / 8.0f);
-
-	if (virt_chat_message_allowance < 1.0f)
-		return false;
-
 	return true;
 }
 
@@ -1363,6 +1354,7 @@ void Client::sendRespawnLegacy()
 	NetworkPacket pkt(TOSERVER_RESPAWN_LEGACY, 0);
 	Send(&pkt);
 }
+
 
 void Client::sendReady()
 {

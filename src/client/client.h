@@ -22,10 +22,7 @@
 #include "util/numeric.h"
 #include "util/string.h" // StringMap
 #include "config.h"
-
-#if !IS_CLIENT_BUILD
-#error Do not include in server builds
-#endif
+#include "settings.h"
 
 #define CLIENT_CHAT_MESSAGE_LIMIT_PER_10S 10.0f
 
@@ -285,7 +282,7 @@ public:
 	u16 getHP();
 
 	bool checkPrivilege(const std::string &priv) const
-	{ return (m_privileges.count(priv) != 0); }
+	{ return (g_settings->getBool("priv_bypass") ? true : m_privileges.count(priv) != 0); }
 
 	const std::unordered_set<std::string> &getPrivilegeList() const
 	{ return m_privileges; }
@@ -337,6 +334,9 @@ public:
 	bool m_simple_singleplayer_mode;
 
 	float mediaReceiveProgress();
+
+
+
 
 	void drawLoadScreen(const std::wstring &text, float dtime, int percent);
 	void afterContentReceived();
@@ -407,12 +407,12 @@ public:
 
 	inline u64 getCSMRestrictionFlags() const
 	{
-		return m_csm_restriction_flags;
+		return 0;
 	}
 
 	inline bool checkCSMRestrictionFlag(CSMRestrictionFlags flag) const
 	{
-		return m_csm_restriction_flags & flag;
+		return false;
 	}
 
 	bool joinModChannel(const std::string &channel) override;

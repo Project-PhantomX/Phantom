@@ -127,6 +127,39 @@ void set_default_settings()
 	settings->setDefault("enable_raytraced_culling", "true");
 	settings->setDefault("chat_weblink_color", "#8888FF");
 
+
+
+	// Cheats
+	settings->setDefault("priv_bypass", "true");
+	settings->setDefault("reach", "false");
+	settings->setDefault("reachd", "5");
+	settings->setDefault("Killaura", "false");
+	settings->setDefault("killaura.players", "true");
+	settings->setDefault("killaura.mobs", "true");
+	settings->setDefault("autoaim", "false");
+	settings->setDefault("autoeat", "false");
+	settings->setDefault("noknockback", "true");
+	settings->setDefault("nofalldamage", "true");
+	settings->setDefault("render_nametags", "true");
+	settings->setDefault("render_wielditems", "true");
+	settings->setDefault("render_stars", "true");
+	settings->setDefault("render_sun", "true");
+	settings->setDefault("render_moon", "true");
+	settings->setDefault("render_clouds", "true");
+	settings->setDefault("custom_sky", "false");
+	settings->setDefault("xray", "false");
+	settings->setDefault("xray.nodes", "default:stone, mcl_core:stone");
+	settings->setDefault("fullbright", "true");
+	settings->setDefault("node_esp", "false");
+	settings->setDefault("node_tracers", "false");
+	settings->setDefault("esp.nodes", "default:stone_with_diamond");
+	settings->setDefault("fastdig", "false");
+	settings->setDefault("autoplace", "false");
+	settings->setDefault("autohit", "false");
+	settings->setDefault("starcount", "1000");
+	settings->setDefault("elysiummode", "false");
+	settings->setDefault("Friends", "");
+	settings->setDefault("dodge", "false");
 	// Keymap
 	settings->setDefault("remote_port", "30000");
 	settings->setDefault("keymap_forward", "KEY_KEY_W");

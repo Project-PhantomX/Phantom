@@ -1,9 +1,7 @@
 // Luanti
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2010-2013 celeron55, Perttu Ahola <celeron55@gmail.com>
-
 #include "game.h"
-
 #include <cmath>
 #include "IAttributes.h"
 #include "client/renderingengine.h"
@@ -531,6 +529,13 @@ protected:
 	void updateStats(RunStats *stats, const FpsControl &draw_times, f32 dtime);
 	void updateProfilerGraphs(ProfilerGraph *graph);
 
+	// Cheats
+	void handleKillaura(v3f origin, f32 max_d);
+	void handleAutoaim(v3f origin, f32 max_d, CameraOrientation &cam_view_target);
+	void handledodge(v3f origin, f32 max_d);
+	void handleAutoeat();
+	core::line3d<f32> getShootline();
+
 	// Input related
 	void processUserInput(f32 dtime);
 	void processKeyInput();
@@ -593,8 +598,7 @@ protected:
 			const v3f &player_position, bool show_debug);
 	void handleDigging(const PointedThing &pointed, const v3s16 &nodepos,
 			const ItemStack &selected_item, const ItemStack &hand_item, f32 dtime);
-	void updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
-			const CameraOrientation &cam);
+	void updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime, CameraOrientation &cam);
 	void updateClouds(float dtime);
 	void updateShadows();
 	void drawScene(ProfilerGraph *graph, RunStats *stats);
@@ -3019,27 +3023,165 @@ void Game::updateSound(f32 dtime)
 	MapNode n = map.getNode(player->getFootstepNodePos());
 	soundmaker->m_player_step_sound = nodedef_manager->get(n).sound_footstep;
 }
-
-
-void Game::processPlayerInteraction(f32 dtime, bool show_hud)
+/**
+ * @brief Handles automatic attacking of nearby entities (Killaura functionality)
+ * 
+ * This method implements an automatic combat system that targets and attacks nearby entities.
+ * It checks for valid targets within a specified range and performs attacks when conditions are met.
+ * 
+ * @param origin The center point from which to check for entities
+ * @param max_d Maximum distance to search for targets
+ * 
+ * Key features:
+ * - Checks if player is alive before executing
+ * - Gets all active objects within range
+ * - Verifies target validity (health, friendly status, etc)
+ * - Respects tool attack cooldown intervals
+ * - Can be configured to target only players or all entities
+ * 
+ * @note Requires active client environment and local player
+ */
+void Game::handleKillaura(v3f origin, f32 max_d)
 {
+	if (client->getHP() <= 0) { return; }
+    ClientEnvironment &env = client->getEnv();
+    std::vector<DistanceSortedActiveObject> allObjects;
+    env.getActiveObjects(origin, max_d, allObjects);
+    LocalPlayer *player = client->getEnv().getLocalPlayer();
+    ItemStack selected, hand;
+    ItemStack playeritem = player->getWieldedItem(&selected, &hand);
+    
+	//const ItemDefinition &def = playeritem.getDefinition(itemdef_manager);
+    ToolCapabilities toolcap = playeritem.getToolCapabilities(itemdef_manager);
+    for (auto &allObject : allObjects) {
+        if (runData.time_from_last_punch < toolcap.full_punch_interval)
+            break;
+		ClientActiveObject *obj = allObject.obj;
+		GenericCAO *cao = env.getGenericCAO(obj->getId());
+		bool mode = g_settings->getBool("killaura.player") ? cao->isPlayer() : true;
+		if (!cao || cao->getHP() <= 0 || cao->Friends(cao) || cao->isPlayerFriendly(cao) || mode)
+			continue;
+
+		aabb3f selection_box(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+		if (!cao->getSelectionBox(&selection_box))
+			continue;
+        PointedThing pointed(obj->getId(), v3f(0, 0, 0), v3f(0, 0, 0), v3f(0, 0, 0), 0, PointabilityType::POINTABLE);
+        client->interact(INTERACT_START_DIGGING, pointed);
+        runData.time_from_last_punch = 0;
+    }
+}
+/**
+ * @brief Handles automatic aiming functionality in the game
+ * 
+ * This function implements auto-aim logic by calculating aim angles towards valid enemy targets.
+ * It will not activate if the player is sneaking or dead. The function finds the nearest valid
+ * enemy player within range and automatically adjusts the camera view angles to target them.
+ * 
+ * @param origin The starting position for searching nearby objects
+ * @param max_d The maximum distance to search for potential targets
+ * 
+ * Key behaviors:
+ * - Ignores dead players
+ * - Ignores friendly players
+ * - Disables when sneaking
+ * - Calculates pitch and yaw angles to target
+ * - Updates camera view angles automatically
+ */
+void Game::handleAutoaim(v3f origin, f32 max_d, CameraOrientation &cam_view_target) 
+{
+	if (client->getHP() <= 0 || isKeyDown(KeyType::SNEAK)) { return; }
+	ClientEnvironment &env = client->getEnv();
+	std::vector<DistanceSortedActiveObject> allObjects;
+	env.getActiveObjects(origin, max_d, allObjects);
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
+	for (auto &allObject : allObjects) {
+		ClientActiveObject *obj = allObject.obj;
+		GenericCAO *cao = env.getGenericCAO(obj->getId());
+		if (!cao || !cao->isPlayer() || cao->getHP() <= 0 || cao->Friends(cao) || cao->isPlayerFriendly(cao))
+			continue;
+		v3f enemyPos = obj->getPosition();
+		v3f playerPos = player->getPosition();
+		v3f d = enemyPos - playerPos; // Directional vector
+		f32 pitch = atan2(-d.Y, sqrt(d.X * d.X + d.Z * d.Z)) * (180.0 / M_PI);
+		f32 yaw = atan2(-d.X,d.Z) * (180.0 / M_PI);
+		cam_view_target.camera_yaw = yaw;
+		cam_view_target.camera_pitch = pitch;
+	}
+}
 
-	const v3f camera_direction = camera->getDirection();
-	const v3s16 camera_offset  = camera->getOffset();
+/**
+ * @brief Automatically consumes food items from the player's inventory when health is low
+ * 
+ * This function searches through the player's main inventory for food items and automatically
+ * consumes them when the player's health is below 20 and above 0. The function will:
+ * 1. Check if player's health is in valid range for eating (0 < HP < 20)
+ * 2. Access the player's main inventory
+ * 3. Iterate through inventory slots looking for items in the "food" group
+ * 4. When food is found, wield it and activate (eat) it
+ * 
+ * The function stops after consuming the first found food item.
+ * 
+ * @note Requires valid client and LocalPlayer instance
+ */
+void Game::handleAutoeat()
+{
+	// Don't eat if dead or health is full
+	if (!client || client->getHP() <= 0 || client->getHP() >= 20)
+		return;
 
-	/*
-		Calculate what block is the crosshair pointing to
-	*/
+	LocalPlayer *player = client->getEnv().getLocalPlayer();
+	if (!player)
+		return;
 
-	ItemStack selected_item, hand_item;
-	const ItemStack &tool_item = player->getWieldedItem(&selected_item, &hand_item);
+	InventoryLocation inventory_location;
+	inventory_location.deSerialize("current_player");
+	Inventory *inventory = client->getInventory(inventory_location);
+	if (!inventory)
+		return;
 
-	const ItemDefinition &selected_def = selected_item.getDefinition(itemdef_manager);
-	f32 d = getToolRange(selected_item, hand_item, itemdef_manager);
+	InventoryList *list = inventory->getList("main");
+	if (!list)
+		return;
 
+	// Search for food items
+	for (u32 i = 0; i < list->getSize(); i++) {
+		ItemStack item = list->getItem(i);
+		if (item.empty())
+			continue;
+
+		ItemDefinition def = item.getDefinition(itemdef_manager);
+		// Check if item is food
+		if (def.groups.find("food") != def.groups.end()) {
+			// Set wielded item
+			player->setWieldIndex(i);
+			runData.new_playeritem = i;
+			
+			// Activate item (eat)
+			PointedThing pointed;
+			pointed.type = POINTEDTHING_NOTHING;
+			client->interact(INTERACT_ACTIVATE, pointed);
+			
+			return; // Successfully found and used food item
+		}
+	}
+	// No food items found
+}
+
+
+core::line3d<f32> Game::getShootline()
+{
+	
+	v3s16 camera_offset = camera->getOffset();
+	v3f camera_direction = camera->getDirection();
+	
+	f32 d;
+	if (g_settings->getBool("reach")) {
+		d = g_settings->getFloat("reachd");
+	} else {
+		ItemStack selected_item, hand_item;
+		d = getToolRange(selected_item, hand_item, itemdef_manager);
+	}
 	core::line3d<f32> shootline;
-
 	switch (camera->getCameraMode()) {
 	case CAMERA_MODE_FIRST:
 		// Shoot from camera position, with bobbing
@@ -3051,26 +3193,44 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 		break;
 	case CAMERA_MODE_THIRD_FRONT:
 		shootline.start = camera->getHeadPosition();
-		// prevent player pointing anything in front-view
-		d = 0;
 		break;
 	}
+	
 	shootline.end = shootline.start + camera_direction * BS * d;
-
+	
 	if (g_touchcontrols && isTouchCrosshairDisabled()) {
 		shootline = g_touchcontrols->getShootline();
-		// Scale shootline to the acual distance the player can reach
+		// Scale shootline to the actual distance the player can reach
 		shootline.end = shootline.start +
 				shootline.getVector().normalize() * BS * d;
 		shootline.start += intToFloat(camera_offset, BS);
 		shootline.end += intToFloat(camera_offset, BS);
 	}
+	
+	return shootline;
+}
+void Game::processPlayerInteraction(f32 dtime, bool show_hud)
+{
+	LocalPlayer *player = client->getEnv().getLocalPlayer();
+	const v3s16 camera_offset  = camera->getOffset();
 
+	/*
+		Calculate what block is the crosshair pointing to
+	*/
+
+
+	ItemStack selected_item, hand_item;
+	const ItemStack &tool_item = player->getWieldedItem(&selected_item, &hand_item);
+
+	const ItemDefinition &selected_def = selected_item.getDefinition(itemdef_manager);
+
+	core::line3d<f32> shootline = getShootline();
 	PointedThing pointed = updatePointedThing(shootline,
 			selected_def.liquids_pointable,
 			selected_def.pointabilities,
 			!runData.btn_down_for_dig,
 			camera_offset);
+
 
 	if (pointed != runData.pointed_old)
 		infostream << "Pointing at " << pointed.dump() << std::endl;
@@ -3749,8 +3909,7 @@ void Game::handleDigging(const PointedThing &pointed, const v3s16 &nodepos,
 	camera->setDigging(0);  // Dig animation
 }
 
-void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
-		const CameraOrientation &cam)
+void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime, CameraOrientation &cam)
 {
 	ZoneScoped;
 	TimeTaker tt_update("Game::updateFrame()");
@@ -3855,6 +4014,17 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 
 	updateChat(dtime);
 
+	/*
+		Cheats
+	*/
+	core::line3d<f32> shootline = getShootline();
+	if (g_settings->getBool("Killaura")) {
+		handleKillaura(shootline.start, shootline.getLength());
+	} else if (g_settings->getBool("autoaim")) {
+		handleAutoaim(shootline.start, shootline.getLength(), cam);
+	} else if (g_settings->getBool("autoeat")) {
+		handleAutoeat();
+	} //else if (g_settings->getBool("dodge") && (g_settings->getBool("Killaura") || g_settings->getBool("autoaim")) {}
 	/*
 		Inventory
 	*/
@@ -4091,7 +4261,7 @@ void Game::readSettings()
 	m_cache_enable_fog                   = g_settings->getBool("enable_fog");
 	m_cache_mouse_sensitivity            = g_settings->getFloat("mouse_sensitivity", 0.001f, 10.0f);
 	m_cache_joystick_frustum_sensitivity = std::max(g_settings->getFloat("joystick_frustum_sensitivity"), 0.001f);
-	m_repeat_place_time                  = g_settings->getFloat("repeat_place_time", 0.16f, 2.0f);
+	m_repeat_place_time                  = g_settings->getFloat("repeat_place_time");
 	m_repeat_dig_time                    = g_settings->getFloat("repeat_dig_time", 0.0f, 2.0f);
 
 	m_cache_enable_noclip                = g_settings->getBool("noclip");

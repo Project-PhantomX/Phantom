@@ -609,6 +609,10 @@ void Camera::wield(const ItemStack &item)
 
 void Camera::drawWieldedTool(irr::core::matrix4* translation)
 {
+
+	if (!g_settings->getBool("render_wielditems")) 
+		return;
+	
 	// Clear Z buffer so that the wielded tool stays in front of world geometry
 	m_wieldmgr->getVideoDriver()->clearBuffers(video::ECBF_DEPTH);
 
@@ -636,6 +640,9 @@ void Camera::drawWieldedTool(irr::core::matrix4* translation)
 
 void Camera::drawNametags()
 {
+	if(!g_settings->getBool("render_nametags")) 
+		return;
+
 	core::matrix4 trans = m_cameranode->getProjectionMatrix();
 	trans *= m_cameranode->getViewMatrix();
 
