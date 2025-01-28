@@ -6,7 +6,7 @@ it's now called `core` due to the renaming of Luanti (formerly Minetest).
 `minetest` will keep existing as an alias, so that old code won't break.
 
 * More information at <http://www.minetest.net/>
-* Developer Wiki: <http://dev.minetest.net/>
+* Developer Wiki: <https://dev.luanti.org/>
 
 Introduction
 ------------
@@ -23,7 +23,7 @@ Transferring client-sided mods from the server to the client is planned, but not
 
 If you see a deficiency in the API, feel free to attempt to add the
 functionality in the engine and API. You can send such improvements as
-source code patches on GitHub (https://github.com/minetest/minetest).
+source code patches on GitHub.
 
 Programming in Lua
 ------------------
