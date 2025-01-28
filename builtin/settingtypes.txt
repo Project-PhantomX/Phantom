@@ -214,20 +214,17 @@ priv_bypass (Privbypass) bool true
 #    Enable increased reach distance for interacting with nodes
 reach (Enable extended reach) bool false
 
+autoeat (Auto eat) bool false
 #    Maximum reach distance when extended reach is enabled
 reachd (Extended reach distance) int 5 1 1000
 
 #    Enable automatic targeting and attacking of players/mobs
 Killaura (Enable kill aura) bool false
 
-#    Enable kill aura targeting of players
-killaura.players (Kill aura targets players) bool true
-
-#    Enable kill aura targeting of mobs  
-killaura.mobs (Kill aura targets mobs) bool true
-
 #    Enable automatic aiming assistance
 autoaim (Enable auto aim) bool false
+
+render_hp () bool true
 
 #    Disable knockback when hit
 noknockback (Disable knockback) bool true
@@ -290,7 +287,7 @@ starcount (Star count) int 1000 0 1000000
 elysiummode (Elysium mode) bool false
 
 #    Comma-separated list of friend player names
-Friends (Friend list) string
+friends (Friend list) string
 
 #    Enable automatic dodging of attacks
 dodge (Enable auto-dodge) bool false

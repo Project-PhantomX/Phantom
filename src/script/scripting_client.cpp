@@ -21,6 +21,7 @@
 #include "lua_api/l_localplayer.h"
 #include "lua_api/l_camera.h"
 #include "lua_api/l_settings.h"
+#include "lua_api/l_clientobject.h"
 #include "lua_api/l_client_sound.h"
 
 ClientScripting::ClientScripting(Client *client):
@@ -72,6 +73,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiChannels::Initialize(L, top);
 	ModApiParticlesLocal::Initialize(L, top);
 	ModApiClientSound::Initialize(L, top);
+	//ClientObjectRef::Register(L);
 }
 
 void ClientScripting::on_client_ready(LocalPlayer *localplayer)

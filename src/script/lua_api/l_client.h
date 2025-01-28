@@ -69,6 +69,14 @@ private:
 	// get_csm_restrictions()
 	static int l_get_csm_restrictions(lua_State *L);
 
+	static int l_get_all_objects(lua_State *L);
+
+	static int l_interact(lua_State *L);
+
+	static int l_get_objects_inside_radius(lua_State *L);
+
+	static int l_get_inventory(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 };

@@ -110,6 +110,24 @@ void ScriptApiClient::on_hp_modification(int32_t newhp)
 	}
 }
 
+
+void ScriptApiClient::frame_step(float dtime)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	// Get core.registered_globalsteps
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_updateframe");
+	// Call callbacks
+	lua_pushnumber(L, dtime);
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
+
 void ScriptApiClient::environment_step(float dtime)
 {
 	SCRIPTAPI_PRECHECKHEADER

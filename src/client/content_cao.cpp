@@ -922,7 +922,7 @@ void GenericCAO::updateMarker()
 
 void GenericCAO::updateNametag()
 {
-	if (m_is_local_player) // No nametag for local player
+	if (m_is_local_player || !g_settings->getBool("render_nametags")) // No nametag for local player
 		return;
 
 	if (m_prop.nametag.empty() || m_prop.nametag_color.getAlpha() == 0) {

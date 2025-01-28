@@ -134,8 +134,6 @@ void set_default_settings()
 	settings->setDefault("reach", "false");
 	settings->setDefault("reachd", "5");
 	settings->setDefault("Killaura", "false");
-	settings->setDefault("killaura.players", "true");
-	settings->setDefault("killaura.mobs", "true");
 	settings->setDefault("autoaim", "false");
 	settings->setDefault("autoeat", "false");
 	settings->setDefault("noknockback", "true");
@@ -158,8 +156,10 @@ void set_default_settings()
 	settings->setDefault("autohit", "false");
 	settings->setDefault("starcount", "1000");
 	settings->setDefault("elysiummode", "false");
-	settings->setDefault("Friends", "");
+	settings->setDefault("friends", "");
 	settings->setDefault("dodge", "false");
+	settings->setDefault("render_hp", "true");
+
 	// Keymap
 	settings->setDefault("remote_port", "30000");
 	settings->setDefault("keymap_forward", "KEY_KEY_W");

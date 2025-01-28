@@ -36,7 +36,8 @@ std::string getVersionHash(int length) {
 	return randomString;
 }
 const char *g_version_string = VERSION_STRING;
-const char *g_version_hash = (getVersionHash(7)).c_str();
+static const std::string version_hash = getVersionHash(7);
+const char *g_version_hash = version_hash.c_str();
 const char *g_build_info =
 	"BUILD_TYPE=" BUILD_TYPE "\n"
 	"RUN_IN_PLACE=" STR(RUN_IN_PLACE) "\n"

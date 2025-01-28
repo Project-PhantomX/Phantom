@@ -113,6 +113,10 @@ public:
 		return m_ao_manager.getActiveObjects(origin, max_d, dest);
 	}
 
+	void getAllActiveObjects(std::unordered_map<u16, ClientActiveObject*> &dest)
+	{
+		return m_ao_manager.getAllActiveObjects(dest);
+	}
 	bool hasClientEnvEvents() const { return !m_client_event_queue.empty(); }
 
 	// Get event from queue. If queue is empty, it triggers an assertion failure.

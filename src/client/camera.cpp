@@ -640,9 +640,6 @@ void Camera::drawWieldedTool(irr::core::matrix4* translation)
 
 void Camera::drawNametags()
 {
-	if(!g_settings->getBool("render_nametags")) 
-		return;
-
 	core::matrix4 trans = m_cameranode->getProjectionMatrix();
 	trans *= m_cameranode->getViewMatrix();
 
@@ -650,38 +647,37 @@ void Camera::drawNametags()
 	video::IVideoDriver *driver = RenderingEngine::get_video_driver();
 	v2u32 screensize = driver->getScreenSize();
 
-	for (const Nametag *nametag : m_nametags) {
-		// Nametags are hidden in GenericCAO::updateNametag()
+	for (Nametag *nametag : m_nametags) {
+		if (nametag->text.empty())
+			continue;
 
 		v3f pos = nametag->parent_node->getAbsolutePosition() + nametag->pos * BS;
 		f32 transformed_pos[4] = { pos.X, pos.Y, pos.Z, 1.0f };
 		trans.multiplyWith1x4Matrix(transformed_pos);
-		if (transformed_pos[3] > 0) {
-			std::wstring nametag_colorless =
-				unescape_translate(utf8_to_wide(nametag->text));
-			core::dimension2d<u32> textsize = font->getDimension(
-				nametag_colorless.c_str());
-			f32 zDiv = transformed_pos[3] == 0.0f ? 1.0f :
+		if (transformed_pos[3] < 0)
+			continue;
+
+		std::wstring nametag_text = translate_string(utf8_to_wide(nametag->text));
+		core::dimension2d<u32> textsize = font->getDimension(nametag_text.c_str());
+		f32 zDiv = transformed_pos[3] == 0.0f ? 1.0f :
 				core::reciprocal(transformed_pos[3]);
-			v2s32 screen_pos;
-			screen_pos.X = screensize.X *
+		v2s32 screen_pos;
+		screen_pos.X = screensize.X *
 				(0.5 * transformed_pos[0] * zDiv + 0.5) - textsize.Width / 2;
-			screen_pos.Y = screensize.Y *
+		screen_pos.Y = screensize.Y *
 				(0.5 - transformed_pos[1] * zDiv * 0.5) - textsize.Height / 2;
+
+		auto bgcolor = nametag->getBgColor(m_show_nametag_backgrounds);
+		if (bgcolor.getAlpha() != 0) {
 			core::rect<s32> size(0, 0, textsize.Width, textsize.Height);
-
-			auto bgcolor = nametag->getBgColor(m_show_nametag_backgrounds);
-			if (bgcolor.getAlpha() != 0) {
-				core::rect<s32> bg_size(-2, 0, textsize.Width + 2, textsize.Height);
-				driver->draw2DRectangle(bgcolor, bg_size + screen_pos);
-			}
-
-			font->draw(
-				translate_string(utf8_to_wide(nametag->text)).c_str(),
-				size + screen_pos, nametag->textcolor);
+			driver->draw2DRectangle(bgcolor, size + screen_pos);
 		}
+		core::rect<s32> size(0, 0, textsize.Width, textsize.Height);
+		font->draw(nametag_text.c_str(), size + screen_pos,
+				nametag->textcolor);
 	}
 }
+
 
 Nametag *Camera::addNametag(scene::ISceneNode *parent_node,
 		const std::string &text, video::SColor textcolor,

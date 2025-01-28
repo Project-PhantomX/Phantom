@@ -531,7 +531,7 @@ protected:
 
 	// Cheats
 	void handleKillaura(v3f origin, f32 max_d);
-	void handleAutoaim(v3f origin, f32 max_d, CameraOrientation &cam_view_target);
+	void handleAutoaim(v3f origin, f32 max_d);
 	void handledodge(v3f origin, f32 max_d);
 	void handleAutoeat();
 	core::line3d<f32> getShootline();
@@ -598,7 +598,7 @@ protected:
 			const v3f &player_position, bool show_debug);
 	void handleDigging(const PointedThing &pointed, const v3s16 &nodepos,
 			const ItemStack &selected_item, const ItemStack &hand_item, f32 dtime);
-	void updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime, CameraOrientation &cam);
+	void updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime, const CameraOrientation &cam);
 	void updateClouds(float dtime);
 	void updateShadows();
 	void drawScene(ProfilerGraph *graph, RunStats *stats);
@@ -3058,8 +3058,8 @@ void Game::handleKillaura(v3f origin, f32 max_d)
             break;
 		ClientActiveObject *obj = allObject.obj;
 		GenericCAO *cao = env.getGenericCAO(obj->getId());
-		bool mode = g_settings->getBool("killaura.player") ? cao->isPlayer() : true;
-		if (!cao || cao->getHP() <= 0 || cao->Friends(cao) || cao->isPlayerFriendly(cao) || mode)
+		
+		if (!cao || cao->getHP() <= 0 || cao->Friends(cao) || cao->isPlayerFriendly(cao))
 			continue;
 
 		aabb3f selection_box(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -3087,7 +3087,7 @@ void Game::handleKillaura(v3f origin, f32 max_d)
  * - Calculates pitch and yaw angles to target
  * - Updates camera view angles automatically
  */
-void Game::handleAutoaim(v3f origin, f32 max_d, CameraOrientation &cam_view_target) 
+void Game::handleAutoaim(v3f origin, f32 max_d) 
 {
 	if (client->getHP() <= 0 || isKeyDown(KeyType::SNEAK)) { return; }
 	ClientEnvironment &env = client->getEnv();
@@ -3104,8 +3104,11 @@ void Game::handleAutoaim(v3f origin, f32 max_d, CameraOrientation &cam_view_targ
 		v3f d = enemyPos - playerPos; // Directional vector
 		f32 pitch = atan2(-d.Y, sqrt(d.X * d.X + d.Z * d.Z)) * (180.0 / M_PI);
 		f32 yaw = atan2(-d.X,d.Z) * (180.0 / M_PI);
-		cam_view_target.camera_yaw = yaw;
-		cam_view_target.camera_pitch = pitch;
+		std::unique_ptr<ClientEvent> event(new ClientEvent());
+		event->type = CE_PLAYER_FORCE_MOVE;
+		event->player_force_move.yaw = yaw; 
+		event->player_force_move.pitch = pitch;
+		client->m_client_event_queue.push(event.release());	
 	}
 }
 
@@ -3125,48 +3128,61 @@ void Game::handleAutoaim(v3f origin, f32 max_d, CameraOrientation &cam_view_targ
  */
 void Game::handleAutoeat()
 {
-	// Don't eat if dead or health is full
-	if (!client || client->getHP() <= 0 || client->getHP() >= 20)
+	// Don't eat if dead
+	if (client->getHP() <= 0)
 		return;
-
+	
+	// Get player inventory
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
-	if (!player)
-		return;
-
+	
 	InventoryLocation inventory_location;
 	inventory_location.deSerialize("current_player");
 	Inventory *inventory = client->getInventory(inventory_location);
-	if (!inventory)
+	if (!inventory) 
 		return;
-
+		
 	InventoryList *list = inventory->getList("main");
 	if (!list)
 		return;
 
-	// Search for food items
-	for (u32 i = 0; i < list->getSize(); i++) {
-		ItemStack item = list->getItem(i);
-		if (item.empty())
-			continue;
+	// Only try to eat when health is not full
+	if (client->getHP() < PLAYER_MAX_HP_DEFAULT) {
+		
+		// Track currently wielded slot to restore it later
+		u16 original_wielded = player->getWieldIndex();
+		
+		// Search for food items
+		for (u32 i = 0; i < list->getSize(); i++) {
+			ItemStack item = list->getItem(i);
+			if (item.empty())
+				continue;
 
-		ItemDefinition def = item.getDefinition(itemdef_manager);
-		// Check if item is food
-		if (def.groups.find("food") != def.groups.end()) {
-			// Set wielded item
-			player->setWieldIndex(i);
-			runData.new_playeritem = i;
+			const ItemDefinition &def = item.getDefinition(itemdef_manager);
 			
-			// Activate item (eat)
-			PointedThing pointed;
-			pointed.type = POINTEDTHING_NOTHING;
-			client->interact(INTERACT_ACTIVATE, pointed);
-			
-			return; // Successfully found and used food item
+			// Check groups for food
+			if (def.groups.count("food") > 0) {
+				// Only change wield if needed
+				if (i != original_wielded) {
+					player->setWieldIndex(i);
+					runData.new_playeritem = i;
+				}
+
+				// Activate item to eat
+				PointedThing pointed;
+				pointed.type = POINTEDTHING_NOTHING;
+				client->interact(INTERACT_ACTIVATE, pointed);
+				
+				// Restore original wielded item if we changed it
+				if (i != original_wielded) {
+					player->setWieldIndex(original_wielded); 
+					runData.new_playeritem = original_wielded;
+				}
+				
+				return; // Exit after eating one food item
+			}
 		}
 	}
-	// No food items found
 }
-
 
 core::line3d<f32> Game::getShootline()
 {
@@ -3909,12 +3925,14 @@ void Game::handleDigging(const PointedThing &pointed, const v3s16 &nodepos,
 	camera->setDigging(0);  // Dig animation
 }
 
-void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime, CameraOrientation &cam)
+void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime, const CameraOrientation &cam)
 {
 	ZoneScoped;
 	TimeTaker tt_update("Game::updateFrame()");
 	LocalPlayer *player = client->getEnv().getLocalPlayer();
 
+	if (client->modsLoaded() && client->getScript())
+		client->getScript()->frame_step(dtime);
 	/*
 		Frame time
 	*/
@@ -4021,7 +4039,7 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime, CameraO
 	if (g_settings->getBool("Killaura")) {
 		handleKillaura(shootline.start, shootline.getLength());
 	} else if (g_settings->getBool("autoaim")) {
-		handleAutoaim(shootline.start, shootline.getLength(), cam);
+		handleAutoaim(shootline.start, shootline.getLength());
 	} else if (g_settings->getBool("autoeat")) {
 		handleAutoeat();
 	} //else if (g_settings->getBool("dodge") && (g_settings->getBool("Killaura") || g_settings->getBool("autoaim")) {}

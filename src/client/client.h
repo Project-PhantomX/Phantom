@@ -430,7 +430,7 @@ public:
 
 	bool inhibit_inventory_revert = false;
 
-private:
+public:
 	void loadMods();
 
 	// Virtual methods from con::PeerHandler

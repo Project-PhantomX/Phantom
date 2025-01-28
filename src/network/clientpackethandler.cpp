@@ -600,6 +600,8 @@ void Client::handleCommand_Breath(NetworkPacket* pkt)
 
 void Client::handleCommand_MovePlayer(NetworkPacket* pkt)
 {
+	LocalPlayer *player = m_env.getLocalPlayer();
+	assert(player != NULL);
 	v3f pos;
 	f32 pitch, yaw;
 
@@ -609,8 +611,12 @@ void Client::handleCommand_MovePlayer(NetworkPacket* pkt)
 			<< " pos=(" << pos.X << "," << pos.Y << "," << pos.Z << ")"
 			<< " pitch=" << pitch
 			<< " yaw=" << yaw
-			<< " Ignoring."
+			<< " Ignoring yaw and pitch changes."
 			<< std::endl;
+
+	player->setPosition(pos);
+
+			
 
 
 }

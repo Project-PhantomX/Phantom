@@ -157,6 +157,8 @@ public:
 
 	const v3f getPosition() const override final;
 
+	inline const v3f getAcceleration() const { return m_acceleration; }
+
 	const v3f getVelocity() const override final { return m_velocity; }
 
 	inline const v3f &getRotation() const { return m_rotation; }

@@ -513,7 +513,7 @@ void Client::step(float dtime)
 	while (m_env.hasClientEnvEvents()) {
 		ClientEnvEvent envEvent = m_env.getClientEnvEvent();
 
-		if (envEvent.type == CEE_PLAYER_DAMAGE && g_settings->getBool("nofalldamage")) {
+		if (envEvent.type == CEE_PLAYER_DAMAGE && !g_settings->getBool("nofalldamage")) {
 			u16 damage = envEvent.player_damage.amount;
 
 			if (envEvent.player_damage.send_to_server)
